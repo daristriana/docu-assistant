@@ -10,7 +10,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
+# --- SE ELIMINÓ EL IMPORT DE 'create_history_aware_retriever' ---
 from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
@@ -41,18 +41,7 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/invoicecompliance",
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
-    "https://developer.fiskaly.com/sign-es/digital_receipt",
-    # Nuevas URLs de 'API'
-    "https://developer.fiskaly.com/api/kassensichv/v2",
-    "https://developer.fiskaly.com/api/sign-de/submission/v1",
-    "https://developer.fiskaly.com/api/dsfinvk/v1",
-    "https://developer.fiskaly.com/api/rksv/v1",
-    "https://developer.fiskaly.com/api/sign-es/v1",
-    "https://developer.fiskaly.com/api/sign-it/2025-08-12",
-    "https://developer.fiskaly.com/api/sign-fr/2025-08-12",
-    "https://developer.fiskaly.com/api/ereceipt/v1",
-    "https://developer.fiskaly.com/api/safe/v0",
-    "https://developer.fiskaly.com/api/management/v0",
+    "https://developer.fiskaly.com/sign-es/digital_receipt"
 ]
 SUPPORT_EMAIL = "support@mycompany.com"
 
@@ -89,24 +78,13 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 5. Create Retriever
-        # --- ESTA ES LA LÍNEA ACTUALIZADA ---
         return vector_store.as_retriever(search_kwargs={"k": 8, "search_type": "mmr"})
     
     except Exception as e:
         st.error(f"Error loading or indexing documents: {e}")
         st.stop()
 
-def get_contextual_retriever_chain(retriever, llm):
-    """
-    Creates a chain that takes chat history and the latest user question,
-    rephrases the question to be standalone, and retrieves relevant documents.
-    """
-    retriever_prompt = ChatPromptTemplate.from_messages([
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-        ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
-    ])
-    return create_history_aware_retriever(llm, retriever, retriever_prompt)
+# --- SE ELIMINÓ LA FUNCIÓN 'get_contextual_retriever_chain' ---
 
 def get_stuff_chain(llm):
     """
@@ -255,25 +233,29 @@ if user_prompt:
         with st.chat_message("ai"):
             with st.spinner("Searching the documentation..."):
                 try:
-                    # 1. Create the history-aware retriever
-                    retriever_chain = get_contextual_retriever_chain(retriever, llm)
+                    # --- LÓGICA SIMPLIFICADA Y CORREGIDA ---
                     
-                    # 2. Create the document stuffing chain
+                    # 1. Crear el 'stuff chain' (este sí usa el historial para el chat)
                     stuff_chain = get_stuff_chain(llm)
                     
-                    # 3. Create the final retrieval chain that links them
+                    # 2. Crear la cadena de recuperación final.
+                    # Pasamos el 'retriever' simple, no el que depende del historial.
+                    # 
+                    # La cadena es lo suficientemente inteligente como para pasar
+                    # el 'input' al 'retriever', y luego pasar
+                    # 'input', 'chat_history' y 'context' (resultados) al 'stuff_chain'.
                     conversational_rag_chain = create_retrieval_chain(
-                        retriever_chain, # The retriever
-                        stuff_chain      # The document-stuffing part
+                        retriever, # <-- Esta es la simplificación clave
+                        stuff_chain
                     )
                     
-                    # 4. Invoke the final chain
+                    # 3. Invocar la cadena final
                     response = conversational_rag_chain.invoke({
                         "chat_history": st.session_state.messages[:-1],
                         "input": user_prompt
                     })
                     
-                    # 5. Display and save response
+                    # 4. Mostrar y guardar la respuesta
                     answer = response['answer']
                     st.write(answer)
                     st.session_state.messages.append(AIMessage(content=answer))
