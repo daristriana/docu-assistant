@@ -1,8 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 
-# Updated, cleaner imports
-from langchain_community.document_loaders import WebBaseLoader
+# --- NUEVOS IMPORTS ---
+from langchain_community.document_loaders import PlaywrightURLLoader
 from langchain_community.vectorstores import FAISS
 # ---
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -10,7 +10,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-# --- SE ELIMINÓ EL IMPORT DE 'create_history_aware_retriever' ---
 from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
@@ -59,7 +58,14 @@ def load_and_index_docs(api_key):
     """
     try:
         # 1. Load Documents
-        loader = WebBaseLoader(DOCS_URLS)
+        # --- USANDO EL NUEVO LOADER MÁS POTENTE ---
+        # 
+        loader = PlaywrightURLLoader(
+            urls=DOCS_URLS, 
+            remove_selectors=["header", "footer", "nav"], # Elimina "ruido"
+            continue_on_failure=True,
+            headless=True # Ejecuta el navegador en modo "fantasma"
+        )
         docs = loader.load()
         
         # 2. Split Documents
@@ -69,6 +75,11 @@ def load_and_index_docs(api_key):
         )
         split_docs = text_splitter.split_documents(docs)
         
+        # Si la carga falló por alguna razón, los 'split_docs' estarán vacíos
+        if not split_docs:
+            st.error("Failed to load any documents. Check URLs and network access.")
+            st.stop()
+            
         # 3. Create Google Embeddings
         embeddings = GoogleGenerativeAIEmbeddings(
             model="models/embedding-001",
@@ -79,7 +90,6 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 5. Create Retriever
-        # --- CORRECCIÓN DE BÚSQUEDA ---
         # Volvemos a la búsqueda por defecto (más precisa) y k=6
         return vector_store.as_retriever(search_kwargs={"k": 6})
     
