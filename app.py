@@ -173,7 +173,7 @@ retriever = load_and_index_docs(google_api_key)
 # 5. Initialize Chat History in Session State
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        AIMessage(content="Hello! How can I help you with the documentation today?")
+        AIMessage(content="Hello! How can I help you? Are you running into a specific error or bug?")
     ]
 
 # 6. Display prior chat messages
