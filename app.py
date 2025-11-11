@@ -1,8 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 
-# --- NUEVOS IMPORTS ---
-from langchain_community.document_loaders import PlaywrightURLLoader
+# --- IMPORTS CORREGIDOS ---
+from langchain_community.document_loaders import WebBaseLoader, TextLoader
 from langchain_community.vectorstores import FAISS
 # ---
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -15,6 +15,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 # --- CONFIGURATION ---
 
 # --- LISTA DE URLS "PURA" DE ESPAÑA ---
+# Estas son las 22 guías que WebBaseLoader SÍ puede leer
 DOCS_URLS = [
     "https://developer.fiskaly.com/",
     "https://developer.fiskaly.com/api/",
@@ -22,7 +23,8 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/products/dsfinv-k-de",
     
     # --- URLs Específicas de SIGN ES (España) ---
-    "https://developer.fiskaly.com/api/sign-es/v1", # <-- La API principal de SIGN ES
+    # La URL de la API /api/sign-es/v1 se elimina de aquí,
+    # ya que se cargará desde el archivo de texto local.
     "https://developer.fiskaly.com/sign-es/introduction",
     "https://developer.fiskaly.com/sign-es/glossary",
     "https://developer.fiskaly.com/sign-es/integration_process",
@@ -43,6 +45,8 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/connectionloss",
     "https://developer.fiskaly.com/sign-es/digital_receipt"
 ]
+# --- ARCHIVO DE TEXTO LOCAL PARA LA API ---
+API_TEXT_FILE = "api_content.txt"
 SUPPORT_EMAIL = "support@mycompany.com"
 
 # --- HELPER FUNCTIONS ---
@@ -50,54 +54,57 @@ SUPPORT_EMAIL = "support@mycompany.com"
 @st.cache_resource(show_spinner="Loading and indexing documentation (this may take a moment)...")
 def load_and_index_docs(api_key):
     """
-    Loads docs, splits them, creates embeddings using the GOOGLE API,
-    and stores them in FAISS.
+    Loads docs from BOTH web URLs and the local text file,
+    splits them, creates embeddings, and stores them in FAISS.
     
     Returns:
         A LangChain retriever object.
     """
     try:
-        # 1. Load Documents
-        # --- USANDO EL NUEVO LOADER MÁS POTENTE ---
-        # 
-        loader = PlaywrightURLLoader(
-            urls=DOCS_URLS, 
-            remove_selectors=["header", "footer", "nav"], # Elimina "ruido"
-            continue_on_failure=True,
-            headless=True # Ejecuta el navegador en modo "fantasma"
-        )
-        docs = loader.load()
+        # 1. Load Documents from Web (las 22 guías)
+        web_loader = WebBaseLoader(DOCS_URLS)
+        docs_from_web = web_loader.load()
         
-        # 2. Split Documents
+        # 2. Load Documents from Local Text File (el contenido de la API)
+        # 
+        text_loader = TextLoader(API_TEXT_FILE, encoding="utf-8")
+        docs_from_text = text_loader.load()
+        
+        # 3. Combine all docs
+        all_docs = docs_from_web + docs_from_text
+        
+        # 4. Split Documents
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, 
             chunk_overlap=200
         )
-        split_docs = text_splitter.split_documents(docs)
+        split_docs = text_splitter.split_documents(all_docs)
         
-        # Si la carga falló por alguna razón, los 'split_docs' estarán vacíos
         if not split_docs:
             st.error("Failed to load any documents. Check URLs and network access.")
             st.stop()
             
-        # 3. Create Google Embeddings
+        # 5. Create Google Embeddings
         embeddings = GoogleGenerativeAIEmbeddings(
             model="models/embedding-001",
             google_api_key=api_key
         )
         
-        # 4. Create Vector Store (FAISS)
+        # 6. Create Vector Store (FAISS)
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
-        # 5. Create Retriever
-        # Volvemos a la búsqueda por defecto (más precisa) y k=6
+        # 7. Create Retriever
+        # Búsqueda estándar (precisa) con k=6
         return vector_store.as_retriever(search_kwargs={"k": 6})
     
+    except FileNotFoundError:
+        st.error(f"Error: El archivo '{API_TEXT_FILE}' no se encontró.")
+        st.write(f"Por favor, crea el archivo '{API_TEXT_FILE}' en tu repositorio de GitHub y pega el contenido de la documentación de la API de SIGN ES en él.")
+        st.stop()
     except Exception as e:
         st.error(f"Error loading or indexing documents: {e}")
         st.stop()
 
-# --- SE ELIMINÓ LA FUNCIÓN 'get_contextual_retriever_chain' ---
 
 def get_stuff_chain(llm):
     """
