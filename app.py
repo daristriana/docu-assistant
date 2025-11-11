@@ -15,13 +15,12 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
 
-# --- ESTA ES LA LISTA CORRECTA Y "PURA" DE URLS ESPAÑOLAS ---
+# --- LISTA DE URLS "PURA" DE ESPAÑA ---
 DOCS_URLS = [
-    # URLs originales
     "https://developer.fiskaly.com/",
     "https://developer.fiskaly.com/api/",
-    "https://developer.fiskaly.com/products/kassensichv-de", # <-- Esta está bien, es de alto nivel
-    "https://developer.fiskaly.com/products/dsfinv-k-de", # <-- Esta está bien, es de alto nivel
+    "https://developer.fiskaly.com/products/kassensichv-de",
+    "https://developer.fiskaly.com/products/dsfinv-k-de",
     
     # --- URLs Específicas de SIGN ES (España) ---
     "https://developer.fiskaly.com/api/sign-es/v1", # <-- La API principal de SIGN ES
@@ -43,8 +42,7 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/invoicecompliance",
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
-    "https://developer.fiskaly.com/sign-es/digital_receipt",
-    "https://developer.fiskaly.com/api/sign-es/v1"
+    "https://developer.fiskaly.com/sign-es/digital_receipt"
 ]
 SUPPORT_EMAIL = "support@mycompany.com"
 
@@ -81,8 +79,9 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 5. Create Retriever
-        # Usamos k=8 y mmr para obtener resultados más amplios y diversos
-        return vector_store.as_retriever(search_kwargs={"k": 8, "search_type": "mmr"})
+        # --- CORRECCIÓN DE BÚSQUEDA ---
+        # Volvemos a la búsqueda por defecto (más precisa) y k=6
+        return vector_store.as_retriever(search_kwargs={"k": 6})
     
     except Exception as e:
         st.error(f"Error loading or indexing documents: {e}")
@@ -206,7 +205,9 @@ if user_prompt:
     with st.chat_message("user"):
         st.write(user_prompt)
         
-    failed_keywords = ["didn't work", "not working", "did not help", "failed", "error", "no funcionó", "no me ayudó"]
+    # --- CORRECCIÓN DE ESCALADA ---
+    # Se eliminó "error" de la lista para evitar falsos positivos
+    failed_keywords = ["didn't work", "not working", "did not help", "failed", "no funcionó", "no me ayudó"]
     is_failure_report = any(keyword in user_prompt.lower() for keyword in failed_keywords)
     
     if is_failure_report and len(st.session_state.messages) > 2:
