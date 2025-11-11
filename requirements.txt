@@ -5,3 +5,5 @@ langchain_google_genai
 faiss-cpu
 langchain-community
 beautifulsoup4
+sentence-transformers
+langchain-huggingface
