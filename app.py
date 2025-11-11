@@ -42,7 +42,6 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
     "https://developer.fiskaly.com/sign-es/digital_receipt"
-    "https://developer.fiskaly.com/api/sign-es/v1"
 ]
 SUPPORT_EMAIL = "support@mycompany.com"
 
@@ -79,7 +78,8 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 5. Create Retriever
-        return vector_store.as_retriever(search_kwargs={"k": 5}) # Aumentado a 5 'chunks'
+        # --- ESTA ES LA LÍNEA ACTUALIZADA ---
+        return vector_store.as_retriever(search_kwargs={"k": 8, "search_type": "mmr"})
     
     except Exception as e:
         st.error(f"Error loading or indexing documents: {e}")
