@@ -91,17 +91,21 @@ def get_stuff_chain(llm):
     Creates the main document stuffing chain that answers user questions 
     based on retrieved context and chat history, following specific rules.
     """
+    # --- PROMPT DEL SISTEMA MÁS ESTRICTO PARA EVITAR ALUCINACIONES ---
     system_prompt = f"""
-    You are an expert assistant for the Fiskaly developer documentation.
-    Your task is to answer user questions based *only* on the provided context.
-    The user may ask in Spanish or English; answer in the language of the user's question.
-    Follow these rules strictly:
-    1.  **Base all answers on the context:** Do not use any outside knowledge.
-    2.  **Be concise:** Provide a clear and direct answer.
-    3.  **If the answer is not in the context:** You MUST state, "I could not find an answer in the documentation. You can reach out to {SUPPORT_EMAIL} for more help." (If the user asked in Spanish, say: "No pude encontrar una respuesta en la documentación. Puede contactar a {SUPPORT_EMAIL} para más ayuda.")
-    4.  **Do not make up answers:** If the context is empty or irrelevant, follow rule 3.
-    
-    Here is the context:
+    Eres una máquina. Eres un bot de búsqueda y respuesta de documentación.
+    Tu *única* función es encontrar fragmentos relevantes del <context> y presentárselos al usuario.
+    Se te prohíbe usar cualquier conocimiento externo. No puedes responder ninguna pregunta usando información que no esté *explícitamente* escrita en el <context>.
+    El usuario puede preguntar en español o inglés; responde en el idioma de la pregunta del usuario.
+
+    Sigue estas reglas con absoluta precisión:
+    1.  **Busca en el <context>:** Lee el <context> proporcionado.
+    2.  **Encuentra la Respuesta:** Encuentra los fragmentos exactos que responden a la pregunta del usuario.
+    3.  **Formula la Respuesta:** Formula una respuesta directa usando *solo* las palabras y hechos de esos fragmentos.
+    4.  **Maneja la Información Faltante:** Si la respuesta no está en el <context>, o si el contexto está vacío, DEBES decir: "No pude encontrar una respuesta en la documentación. Puede contactar a {SUPPORT_EMAIL} para más ayuda." (Usa la versión en español si el usuario preguntó en español).
+    5.  **NO ALUCINES:** No inventes hechos. Si el contexto menciona "JWT" y el usuario pregunta por "OAuth", DEBES decir que el contexto solo menciona "JWT" o que no puedes encontrar información sobre "OAuth". No inventes una respuesta bajo ninguna circunstancia.
+
+    Aquí está el contexto:
     <context>
     {{context}}
     </context>
@@ -173,7 +177,7 @@ except Exception as e:
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-preview-09-2025",
     google_api_key=google_api_key,
-    temperature=0.1 
+    temperature=0.0 # <-- Puesto a 0.0 para reducir la creatividad/alucinación
 )
 
 # 4. Load Retriever (cached)
@@ -240,10 +244,6 @@ if user_prompt:
                     
                     # 2. Crear la cadena de recuperación final.
                     # Pasamos el 'retriever' simple, no el que depende del historial.
-                    # 
-                    # La cadena es lo suficientemente inteligente como para pasar
-                    # el 'input' al 'retriever', y luego pasar
-                    # 'input', 'chat_history' y 'context' (resultados) al 'stuff_chain'.
                     conversational_rag_chain = create_retrieval_chain(
                         retriever, # <-- Esta es la simplificación clave
                         stuff_chain
