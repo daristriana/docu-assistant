@@ -146,4 +146,127 @@ def get_escalation_summary(chat_history_messages, user_question, failed_solution
     Generate a summary for the support team:
     """
     try:
-        response = llm.invoke([HumanMessage(
+        response = llm.invoke([HumanMessage(content=summary_prompt)])
+        return response.content
+    except Exception as e:
+        return f"Error generating summary: {e}"
+
+# --- STREAMLIT APP ---
+
+st.set_page_config(page_title="Doc Assistant", page_icon="🤖")
+st.title("🤖 AI Documentation Assistant")
+st.write("Ask questions about the Fiskaly developer documentation.")
+
+# 1. Get API Key in Sidebar
+with st.sidebar:
+    st.header("Configuration")
+    if "GOOGLE_API_KEY" in st.secrets:
+        google_api_key = st.secrets["GOOGLE_API_KEY"]
+        st.success("API key loaded from secrets! 🤫")
+    else:
+        google_api_key = st.text_input(
+            "Enter your Google Gemini API Key", 
+            type="password"
+        )
+    if not google_api_key:
+        st.info("Please enter your API key to start (or add it to your Streamlit secrets as GOOGLE_API_KEY).")
+        st.stop()
+
+# 2. Configure Gemini (globally for the chat model)
+try:
+    genai.configure(api_key=google_api_key)
+except Exception as e:
+    st.error(f"Failed to configure Google AI: {e}")
+    st.stop()
+
+# 3. Initialize LLM
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash-preview-09-2025",
+    google_api_key=google_api_key,
+    temperature=0.1 
+)
+
+# 4. Load Retriever (cached)
+retriever = load_and_index_docs(google_api_key)
+
+# 5. Initialize Chat History in Session State
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        AIMessage(content="Hello! How can I help you with the Fiskaly documentation? Are you running into a specific error or bug?")
+    ]
+
+# 6. Display prior chat messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg.type):
+        st.write(msg.content)
+
+# 7. Get user input
+user_prompt = st.chat_input("Ask your question here...")
+
+if user_prompt:
+    st.session_state.messages.append(HumanMessage(content=user_prompt))
+    with st.chat_message("user"):
+        st.write(user_prompt)
+        
+    failed_keywords = ["didn't work", "not working", "did not help", "failed", "error", "no funcionó", "no me ayudó"]
+    is_failure_report = any(keyword in user_prompt.lower() for keyword in failed_keywords)
+    
+    if is_failure_report and len(st.session_state.messages) > 2:
+        last_bot_answer = st.session_state.messages[-2].content
+        last_user_question = st.session_state.messages[-3].content
+        
+        with st.chat_message("ai"):
+            with st.spinner("I'm sorry to hear that. Generating a summary for support..."):
+                summary = get_escalation_summary(
+                    st.session_state.messages[:-1], 
+                    last_user_question,
+                    last_bot_answer,
+                    llm
+                )
+                escalation_response = f"""
+                I'm sorry the previous solution didn't work.
+                
+                I can help you create a support ticket. Here is a summary of our conversation:
+                
+                ---
+                **Support Ticket Summary:**
+                {summary}
+                ---
+                
+                You can forward this summary to **{SUPPORT_EMAIL}** to create a ticket.
+                """
+                st.write(escalation_response)
+                st.session_state.messages.append(AIMessage(content=escalation_response))
+
+    else:
+        # --- Normal RAG Chat Logic ---
+        with st.chat_message("ai"):
+            with st.spinner("Searching the documentation..."):
+                try:
+                    # 1. Create the history-aware retriever
+                    retriever_chain = get_contextual_retriever_chain(retriever, llm)
+                    
+                    # 2. Create the document stuffing chain
+                    stuff_chain = get_stuff_chain(llm)
+                    
+                    # 3. Create the final retrieval chain that links them
+                    conversational_rag_chain = create_retrieval_chain(
+                        retriever_chain, # The retriever
+                        stuff_chain      # The document-stuffing part
+                    )
+                    
+                    # 4. Invoke the final chain
+                    response = conversational_rag_chain.invoke({
+                        "chat_history": st.session_state.messages[:-1],
+                        "input": user_prompt
+                    })
+                    
+                    # 5. Display and save response
+                    answer = response['answer']
+                    st.write(answer)
+                    st.session_state.messages.append(AIMessage(content=answer))
+                    
+                except Exception as e:
+                    error_msg = f"An error occurred: {e}"
+                    st.error(error_msg)
+                    st.session_state.messages.append(AIMessage(content=error_msg))
