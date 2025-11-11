@@ -42,7 +42,7 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
     "https://developer.fiskaly.com/sign-es/digital_receipt"
-]  # <-- El corchete ] que faltaba probablemente estaba aquí
+]
 SUPPORT_EMAIL = "support@mycompany.com"
 
 # --- HELPER FUNCTIONS ---
@@ -94,4 +94,56 @@ def get_contextual_retriever_chain(retriever, llm):
         ("user", "{input}"),
         ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
     ])
-    return create_history_aware_retriever(llm, retriever,
+    return create_history_aware_retriever(llm, retriever, retriever_prompt)
+
+def get_stuff_chain(llm):
+    """
+    Creates the main document stuffing chain that answers user questions 
+    based on retrieved context and chat history, following specific rules.
+    """
+    system_prompt = f"""
+    You are an expert assistant for the Fiskaly developer documentation.
+    Your task is to answer user questions based *only* on the provided context.
+    The user may ask in Spanish or English; answer in the language of the user's question.
+    Follow these rules strictly:
+    1.  **Base all answers on the context:** Do not use any outside knowledge.
+    2.  **Be concise:** Provide a clear and direct answer.
+    3.  **If the answer is not in the context:** You MUST state, "I could not find an answer in the documentation. You can reach out to {SUPPORT_EMAIL} for more help." (If the user asked in Spanish, say: "No pude encontrar una respuesta en la documentación. Puede contactar a {SUPPORT_EMAIL} para más ayuda.")
+    4.  **Do not make up answers:** If the context is empty or irrelevant, follow rule 3.
+    
+    Here is the context:
+    <context>
+    {{context}}
+    </context>
+    """
+    qa_prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", "{input}"),
+    ])
+    return create_stuff_documents_chain(llm, qa_prompt)
+
+def get_escalation_summary(chat_history_messages, user_question, failed_solution, llm):
+    """
+    Generates a summary for the support team when a user indicates
+    a solution failed.
+    """
+    history_str = "\n".join(
+        [f"{'User' if isinstance(msg, HumanMessage) else 'Assistant'}: {msg.content}" 
+         for msg in chat_history_messages]
+    )
+    summary_prompt = f"""
+    A user is having trouble with a solution from our documentation.
+    Please generate a concise summary of the conversation for a support ticket.
+    Include the user's original question and the solution that failed.
+    
+    Conversation History:
+    {history_str}
+    
+    User's original question (approximate): {user_question}
+    Solution that failed (approximate): {failed_solution}
+    
+    Generate a summary for the support team:
+    """
+    try:
+        response = llm.invoke([HumanMessage(
