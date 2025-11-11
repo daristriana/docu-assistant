@@ -15,14 +15,16 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
 
-# --- LISTA DE URLS ACTUALIZADA CON LAS 23 PÁGINAS ---
+# --- ESTA ES LA LISTA CORRECTA Y "PURA" DE URLS ESPAÑOLAS ---
 DOCS_URLS = [
     # URLs originales
     "https://developer.fiskaly.com/",
     "https://developer.fiskaly.com/api/",
-    "https://developer.fiskaly.com/products/kassensichv-de",
-    "https://developer.fiskaly.com/products/dsfinv-k-de",
-    # Nuevas URLs de 'sign-es'
+    "https://developer.fiskaly.com/products/kassensichv-de", # <-- Esta está bien, es de alto nivel
+    "https://developer.fiskaly.com/products/dsfinv-k-de", # <-- Esta está bien, es de alto nivel
+    
+    # --- URLs Específicas de SIGN ES (España) ---
+    "https://developer.fiskaly.com/api/sign-es/v1", # <-- La API principal de SIGN ES
     "https://developer.fiskaly.com/sign-es/introduction",
     "https://developer.fiskaly.com/sign-es/glossary",
     "https://developer.fiskaly.com/sign-es/integration_process",
@@ -41,7 +43,8 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/invoicecompliance",
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
-    "https://developer.fiskaly.com/sign-es/digital_receipt"
+    "https://developer.fiskaly.com/sign-es/digital_receipt",
+    "https://developer.fiskaly.com/api/sign-es/v1"
 ]
 SUPPORT_EMAIL = "support@mycompany.com"
 
@@ -78,6 +81,7 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 5. Create Retriever
+        # Usamos k=8 y mmr para obtener resultados más amplios y diversos
         return vector_store.as_retriever(search_kwargs={"k": 8, "search_type": "mmr"})
     
     except Exception as e:
@@ -177,7 +181,7 @@ except Exception as e:
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-preview-09-2025",
     google_api_key=google_api_key,
-    temperature=0.0 # <-- Puesto a 0.0 para reducir la creatividad/alucinación
+    temperature=0.0 # <-- PUESTO A 0.0 PARA CERO ALUCINACIONES
 )
 
 # 4. Load Retriever (cached)
