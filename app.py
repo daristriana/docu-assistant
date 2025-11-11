@@ -42,5 +42,56 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
     "https://developer.fiskaly.com/sign-es/digital_receipt"
-]
-SUPPORT_EMAIL =
+]  # <-- El corchete ] que faltaba probablemente estaba aquí
+SUPPORT_EMAIL = "support@mycompany.com"
+
+# --- HELPER FUNCTIONS ---
+
+@st.cache_resource(show_spinner="Loading and indexing documentation (this may take a moment)...")
+def load_and_index_docs(api_key):
+    """
+    Loads docs, splits them, creates embeddings using the GOOGLE API,
+    and stores them in FAISS.
+    
+    Returns:
+        A LangChain retriever object.
+    """
+    try:
+        # 1. Load Documents
+        loader = WebBaseLoader(DOCS_URLS)
+        docs = loader.load()
+        
+        # 2. Split Documents
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, 
+            chunk_overlap=200
+        )
+        split_docs = text_splitter.split_documents(docs)
+        
+        # 3. Create Google Embeddings
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001",
+            google_api_key=api_key
+        )
+        
+        # 4. Create Vector Store (FAISS)
+        vector_store = FAISS.from_documents(split_docs, embeddings)
+        
+        # 5. Create Retriever
+        return vector_store.as_retriever(search_kwargs={"k": 5}) # Aumentado a 5 'chunks'
+    
+    except Exception as e:
+        st.error(f"Error loading or indexing documents: {e}")
+        st.stop()
+
+def get_contextual_retriever_chain(retriever, llm):
+    """
+    Creates a chain that takes chat history and the latest user question,
+    rephrases the question to be standalone, and retrieves relevant documents.
+    """
+    retriever_prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", "{input}"),
+        ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+    ])
+    return create_history_aware_retriever(llm, retriever,
