@@ -10,21 +10,17 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
 
 # --- LISTA DE URLS "PURA" DE ESPAÑA ---
-# Estas son las 22 guías que WebBaseLoader SÍ puede leer
 DOCS_URLS = [
     "https://developer.fiskaly.com/",
     "https://developer.fiskaly.com/api/",
     "https://developer.fiskaly.com/products/kassensichv-de",
     "https://developer.fiskaly.com/products/dsfinv-k-de",
-    
-    # --- URLs Específicas de SIGN ES (España) ---
-    # La URL de la API /api/sign-es/v1 se elimina de aquí,
-    # ya que se cargará desde el archivo de texto local.
     "https://developer.fiskaly.com/sign-es/introduction",
     "https://developer.fiskaly.com/sign-es/glossary",
     "https://developer.fiskaly.com/sign-es/integration_process",
@@ -66,7 +62,6 @@ def load_and_index_docs(api_key):
         docs_from_web = web_loader.load()
         
         # 2. Load Documents from Local Text File (el contenido de la API)
-        # 
         text_loader = TextLoader(API_TEXT_FILE, encoding="utf-8")
         docs_from_text = text_loader.load()
         
@@ -74,8 +69,10 @@ def load_and_index_docs(api_key):
         all_docs = docs_from_web + docs_from_text
         
         # 4. Split Documents
+        # --- AJUSTE DE PRECISIÓN ---
+        # Trozos más pequeños (800) con más superposición (200)
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, 
+            chunk_size=800, 
             chunk_overlap=200
         )
         split_docs = text_splitter.split_documents(all_docs)
@@ -104,6 +101,20 @@ def load_and_index_docs(api_key):
     except Exception as e:
         st.error(f"Error loading or indexing documents: {e}")
         st.stop()
+
+# --- SE RE-INTRODUCE ESTA FUNCIÓN ---
+def get_contextual_retriever_chain(retriever, llm):
+    """
+    Creates a chain that takes chat history and the latest user question,
+    rephrases the question to be standalone, and retrieves relevant documents.
+    """
+    retriever_prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", "{input}"),
+        ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+    ])
+    # 
+    return create_history_aware_retriever(llm, retriever, retriever_prompt)
 
 
 def get_stuff_chain(llm):
@@ -154,8 +165,8 @@ def get_escalation_summary(chat_history_messages, user_question, failed_solution
     Conversation History:
     {history_str}
     
-    User's original question (approximate): {user_question}
-    Solution that failed (approximate): {failed_solution}
+    User's original question (approximate): {question}
+    Solution that failed (approximate): {solution}
     
     Generate a summary for the support team:
     """
@@ -259,25 +270,27 @@ if user_prompt:
         with st.chat_message("ai"):
             with st.spinner("Searching the documentation..."):
                 try:
-                    # --- LÓGICA SIMPLIFICADA Y CORREGIDA ---
+                    # --- LÓGICA COMPLETA RE-INTRODUCIDA ---
                     
                     # 1. Crear el 'stuff chain' (este sí usa el historial para el chat)
                     stuff_chain = get_stuff_chain(llm)
                     
-                    # 2. Crear la cadena de recuperación final.
-                    # Pasamos el 'retriever' simple, no el que depende del historial.
+                    # 2. Crear el 'history aware retriever' (para entender el seguimiento)
+                    retriever_chain = get_contextual_retriever_chain(retriever, llm)
+                    
+                    # 3. Crear la cadena de recuperación final.
                     conversational_rag_chain = create_retrieval_chain(
-                        retriever, # <-- Esta es la simplificación clave
+                        retriever_chain,
                         stuff_chain
                     )
                     
-                    # 3. Invocar la cadena final
+                    # 4. Invocar la cadena final
                     response = conversational_rag_chain.invoke({
                         "chat_history": st.session_state.messages[:-1],
                         "input": user_prompt
                     })
                     
-                    # 4. Mostrar y guardar la respuesta
+                    # 5. Mostrar y guardar la respuesta
                     answer = response['answer']
                     st.write(answer)
                     st.session_state.messages.append(AIMessage(content=answer))
