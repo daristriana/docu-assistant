@@ -41,7 +41,18 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/invoicecompliance",
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
-    "https://developer.fiskaly.com/sign-es/digital_receipt"
+    "https://developer.fiskaly.com/sign-es/digital_receipt",
+    # Nuevas URLs de 'API'
+    "https://developer.fiskaly.com/api/kassensichv/v2",
+    "https://developer.fiskaly.com/api/sign-de/submission/v1",
+    "https://developer.fiskaly.com/api/dsfinvk/v1",
+    "https://developer.fiskaly.com/api/rksv/v1",
+    "https://developer.fiskaly.com/api/sign-es/v1",
+    "https://developer.fiskaly.com/api/sign-it/2025-08-12",
+    "https://developer.fiskaly.com/api/sign-fr/2025-08-12",
+    "https://developer.fiskaly.com/api/ereceipt/v1",
+    "https://developer.fiskaly.com/api/safe/v0",
+    "https://developer.fiskaly.com/api/management/v0",
 ]
 SUPPORT_EMAIL = "support@mycompany.com"
 
