@@ -42,6 +42,7 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
     "https://developer.fiskaly.com/sign-es/digital_receipt"
+    "https://developer.fiskaly.com/api/sign-es/v1"
 ]
 SUPPORT_EMAIL = "support@mycompany.com"
 
