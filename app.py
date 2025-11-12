@@ -92,8 +92,9 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 7. Create Retriever
-        # Búsqueda estándar (precisa) con k=6
-        return vector_store.as_retriever(search_kwargs={"k": 6})
+        # --- AJUSTE DE PRECISIÓN ---
+        # k=4 para un contexto más pequeño y enfocado
+        return vector_store.as_retriever(search_kwargs={"k": 4})
     
     except FileNotFoundError:
         st.error(f"Error: El archivo '{API_TEXT_FILE}' no se encontró.")
@@ -114,7 +115,6 @@ def get_contextual_retriever_chain(retriever, llm):
         ("user", "{input}"),
         ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
     ])
-    # 
     return create_history_aware_retriever(llm, retriever, retriever_prompt)
 
 
@@ -293,10 +293,36 @@ if user_prompt:
                         "input": user_prompt
                     })
                     
-                    # 5. Mostrar y guardar la respuesta
+                    # --- LÓGICA DE CITACIÓN DE FUENTES ---
+                    
+                    # 5. Extraer la respuesta y el contexto
                     answer = response['answer']
-                    st.write(answer)
-                    st.session_state.messages.append(AIMessage(content=answer))
+                    context_docs = response.get('context', [])
+                    
+                    is_failure_message = (SUPPORT_EMAIL in answer)
+                    full_answer = answer # Empezar con la respuesta del bot
+                    
+                    # 6. Añadir fuentes si la respuesta NO es un mensaje de fallo
+                    if context_docs and not is_failure_message:
+                        sources = set()
+                        for doc in context_docs:
+                            if 'source' in doc.metadata:
+                                source_url = doc.metadata['source']
+                                # Mapear el archivo local de vuelta a su URL web
+                                if source_url == API_TEXT_FILE:
+                                    source_url = "https://developer.fiskaly.com/api/sign-es/v1"
+                                
+                                # Limpiar los enlaces de anclaje (#) para URLs más limpias
+                                sources.add(source_url.split('#')[0])
+                        
+                        if sources:
+                            source_list = "\n".join(f"- {s}" for s in sources)
+                            # Añadir la citación (puedes cambiar "Source(s)" a "Fuentes:")
+                            full_answer += f"\n\n**Source(s):**\n{source_list}"
+
+                    # 7. Mostrar y guardar la respuesta completa
+                    st.write(full_answer)
+                    st.session_state.messages.append(AIMessage(content=full_answer))
                     
                 except Exception as e:
                     error_msg = f"An error occurred: {e}"
