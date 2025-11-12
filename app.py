@@ -71,10 +71,10 @@ def load_and_index_docs(api_key):
         
         # 4. Split Documents
         # --- AJUSTE DE MÁXIMA PRECISIÓN ---
-        # Trozos más pequeños (500) con superposición (100)
+        # Trozos más pequeños (300) con superposición (50)
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500, 
-            chunk_overlap=100
+            chunk_size=300, 
+            chunk_overlap=50
         )
         split_docs = text_splitter.split_documents(all_docs)
         
@@ -249,8 +249,8 @@ if user_prompt:
             with st.spinner("I'm sorry to hear that. Generating a summary for support..."):
                 summary = get_escalation_summary(
                     st.session_state.messages[:-1], 
-                    last_user_question, # <-- Error corregido aquí
-                    last_bot_answer,  # <-- Error corregido aquí
+                    last_user_question, # <-- Error de variable corregido
+                    last_bot_answer,  # <-- Error de variable corregido
                     llm
                 )
                 escalation_response = f"""
