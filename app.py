@@ -10,7 +10,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
@@ -43,7 +42,8 @@ DOCS_URLS = [
 ]
 # --- ARCHIVO DE TEXTO LOCAL PARA LA API ---
 API_TEXT_FILE = "api_content.txt"
-SUPPORT_EMAIL = "support@mycompany.com"
+# --- CORREO DE SOPORTE ACTUALIZADO ---
+SUPPORT_EMAIL = "dev-support@fiskaly.com"
 
 # --- HELPER FUNCTIONS ---
 
@@ -69,11 +69,11 @@ def load_and_index_docs(api_key):
         all_docs = docs_from_web + docs_from_text
         
         # 4. Split Documents
-        # --- AJUSTE DE PRECISIÓN ---
-        # Trozos más pequeños (800) con más superposición (200)
+        # --- AJUSTE DE MÁXIMA PRECISIÓN ---
+        # Trozos más pequeños (500) con superposición (100)
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=800, 
-            chunk_overlap=200
+            chunk_size=500, 
+            chunk_overlap=100
         )
         split_docs = text_splitter.split_documents(all_docs)
         
@@ -102,27 +102,13 @@ def load_and_index_docs(api_key):
         st.error(f"Error loading or indexing documents: {e}")
         st.stop()
 
-# --- SE RE-INTRODUCE ESTA FUNCIÓN ---
-def get_contextual_retriever_chain(retriever, llm):
-    """
-    Creates a chain that takes chat history and the latest user question,
-    rephrases the question to be standalone, and retrieves relevant documents.
-    """
-    retriever_prompt = ChatPromptTemplate.from_messages([
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-        ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
-    ])
-    # 
-    return create_history_aware_retriever(llm, retriever, retriever_prompt)
-
 
 def get_stuff_chain(llm):
     """
     Creates the main document stuffing chain that answers user questions 
     based on retrieved context and chat history, following specific rules.
     """
-    # --- PROMPT DEL SISTEMA MÁS ESTRICTO PARA EVITAR ALUCINACIONES ---
+    # --- PROMPT DEL SISTEMA ACTUALIZADO ---
     system_prompt = f"""
     Eres una máquina. Eres un bot de búsqueda y respuesta de documentación.
     Tu *única* función es encontrar fragmentos relevantes del <context> y presentárselos al usuario.
@@ -133,7 +119,9 @@ def get_stuff_chain(llm):
     1.  **Busca en el <context>:** Lee el <context> proporcionado.
     2.  **Encuentra la Respuesta:** Encuentra los fragmentos exactos que responden a la pregunta del usuario.
     3.  **Formula la Respuesta:** Formula una respuesta directa usando *solo* las palabras y hechos de esos fragmentos.
-    4.  **Maneja la Información Faltante:** Si la respuesta no está en el <context>, o si el contexto está vacío, DEBES decir: "No pude encontrar una respuesta en la documentación. Puede contactar a {SUPPORT_EMAIL} para más ayuda." (Usa la versión en español si el usuario preguntó en español).
+    4.  **Maneja la Información Faltante:** Si la respuesta no está en el <context>, o si el contexto está vacío, DEBES responder con el siguiente texto:
+        "I'm sorry, I couldn't find an answer to your question in the documentation. For further assistance, please email our team at {SUPPORT_EMAIL} with as much detail as possible about your issue, and we'll get back to you as soon as possible."
+        (Si el usuario preguntó en español, responde con: "Lo siento, no pude encontrar una respuesta a tu pregunta en la documentación. Para más ayuda, por favor envía un correo a nuestro equipo a {SUPPORT_EMAIL} con todos los detalles posibles sobre tu problema, y te responderemos lo antes posible.")
     5.  **NO ALUCINES:** No inventes hechos. Si el contexto menciona "JWT" y el usuario pregunta por "OAuth", DEBES decir que el contexto solo menciona "JWT" o que no puedes encontrar información sobre "OAuth". No inventes una respuesta bajo ninguna circunstancia.
 
     Aquí está el contexto:
@@ -165,8 +153,8 @@ def get_escalation_summary(chat_history_messages, user_question, failed_solution
     Conversation History:
     {history_str}
     
-    User's original question (approximate): {question}
-    Solution that failed (approximate): {solution}
+    User's original question (approximate): {user_question}
+    Solution that failed (approximate): {failed_solution}
     
     Generate a summary for the support team:
     """
@@ -206,7 +194,7 @@ except Exception as e:
 
 # 3. Initialize LLM
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-preview-09-2025",
+    model="gemini-2.m.flash-preview-09-2025",
     google_api_key=google_api_key,
     temperature=0.0 # <-- PUESTO A 0.0 PARA CERO ALUCINACIONES
 )
@@ -214,88 +202,4 @@ llm = ChatGoogleGenerativeAI(
 # 4. Load Retriever (cached)
 retriever = load_and_index_docs(google_api_key)
 
-# 5. Initialize Chat History in Session State
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        AIMessage(content="Hello! How can I help you with the Fiskaly documentation? Are you running into a specific error or bug?")
-    ]
-
-# 6. Display prior chat messages
-for msg in st.session_state.messages:
-    with st.chat_message(msg.type):
-        st.write(msg.content)
-
-# 7. Get user input
-user_prompt = st.chat_input("Ask your question here...")
-
-if user_prompt:
-    st.session_state.messages.append(HumanMessage(content=user_prompt))
-    with st.chat_message("user"):
-        st.write(user_prompt)
-        
-    # --- CORRECCIÓN DE ESCALADA ---
-    # Se eliminó "error" de la lista para evitar falsos positivos
-    failed_keywords = ["didn't work", "not working", "did not help", "failed", "no funcionó", "no me ayudó"]
-    is_failure_report = any(keyword in user_prompt.lower() for keyword in failed_keywords)
-    
-    if is_failure_report and len(st.session_state.messages) > 2:
-        last_bot_answer = st.session_state.messages[-2].content
-        last_user_question = st.session_state.messages[-3].content
-        
-        with st.chat_message("ai"):
-            with st.spinner("I'm sorry to hear that. Generating a summary for support..."):
-                summary = get_escalation_summary(
-                    st.session_state.messages[:-1], 
-                    last_user_question,
-                    last_bot_answer,
-                    llm
-                )
-                escalation_response = f"""
-                I'm sorry the previous solution didn't work.
-                
-                I can help you create a support ticket. Here is a summary of our conversation:
-                
-                ---
-                **Support Ticket Summary:**
-                {summary}
-                ---
-                
-                You can forward this summary to **{SUPPORT_EMAIL}** to create a ticket.
-                """
-                st.write(escalation_response)
-                st.session_state.messages.append(AIMessage(content=escalation_response))
-
-    else:
-        # --- Normal RAG Chat Logic ---
-        with st.chat_message("ai"):
-            with st.spinner("Searching the documentation..."):
-                try:
-                    # --- LÓGICA COMPLETA RE-INTRODUCIDA ---
-                    
-                    # 1. Crear el 'stuff chain' (este sí usa el historial para el chat)
-                    stuff_chain = get_stuff_chain(llm)
-                    
-                    # 2. Crear el 'history aware retriever' (para entender el seguimiento)
-                    retriever_chain = get_contextual_retriever_chain(retriever, llm)
-                    
-                    # 3. Crear la cadena de recuperación final.
-                    conversational_rag_chain = create_retrieval_chain(
-                        retriever_chain,
-                        stuff_chain
-                    )
-                    
-                    # 4. Invocar la cadena final
-                    response = conversational_rag_chain.invoke({
-                        "chat_history": st.session_state.messages[:-1],
-                        "input": user_prompt
-                    })
-                    
-                    # 5. Mostrar y guardar la respuesta
-                    answer = response['answer']
-                    st.write(answer)
-                    st.session_state.messages.append(AIMessage(content=answer))
-                    
-                except Exception as e:
-                    error_msg = f"An error occurred: {e}"
-                    st.error(error_msg)
-                    st.session_state.messages.append(AIMessage(content=error_msg))
+#
