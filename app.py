@@ -10,6 +10,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
@@ -102,13 +103,27 @@ def load_and_index_docs(api_key):
         st.error(f"Error loading or indexing documents: {e}")
         st.stop()
 
+# --- SE RE-INTRODUCE ESTA FUNCIÓN ---
+def get_contextual_retriever_chain(retriever, llm):
+    """
+    Creates a chain that takes chat history and the latest user question,
+    rephrases the question to be standalone, and retrieves relevant documents.
+    """
+    retriever_prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", "{input}"),
+        ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+    ])
+    # 
+    return create_history_aware_retriever(llm, retriever, retriever_prompt)
+
 
 def get_stuff_chain(llm):
     """
     Creates the main document stuffing chain that answers user questions 
     based on retrieved context and chat history, following specific rules.
     """
-    # --- PROMPT DEL SISTEMA ACTUALIZADO CON TU NUEVO MENSAJE DE FALLO ---
+    # --- PROMPT DEL SISTEMA ACTUALIZADO ---
     system_prompt = f"""
     Eres una máquina. Eres un bot de búsqueda y respuesta de documentación.
     Tu *única* función es encontrar fragmentos relevantes del <context> y presentárselos al usuario.
@@ -194,7 +209,7 @@ except Exception as e:
 
 # 3. Initialize LLM
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-preview-09-2025", # Corregido (sin el .m)
+    model="gemini-2.5-flash-preview-09-2025",
     google_api_key=google_api_key,
     temperature=0.0 # <-- PUESTO A 0.0 PARA CERO ALUCINACIONES
 )
@@ -234,8 +249,8 @@ if user_prompt:
             with st.spinner("I'm sorry to hear that. Generating a summary for support..."):
                 summary = get_escalation_summary(
                     st.session_state.messages[:-1], 
-                    last_user_question,
-                    last_bot_answer,
+                    last_user_question, # <-- Error corregido aquí
+                    last_bot_answer,  # <-- Error corregido aquí
                     llm
                 )
                 escalation_response = f"""
@@ -258,25 +273,27 @@ if user_prompt:
         with st.chat_message("ai"):
             with st.spinner("Searching the documentation..."):
                 try:
-                    # --- LÓGICA SIMPLIFICADA Y CORREGIDA ---
+                    # --- LÓGICA COMPLETA RE-INTRODUCIDA ---
                     
                     # 1. Crear el 'stuff chain' (este sí usa el historial para el chat)
                     stuff_chain = get_stuff_chain(llm)
                     
-                    # 2. Crear la cadena de recuperación final.
-                    # Pasamos el 'retriever' simple, no el que depende del historial.
+                    # 2. Crear el 'history aware retriever' (para entender el seguimiento)
+                    retriever_chain = get_contextual_retriever_chain(retriever, llm)
+                    
+                    # 3. Crear la cadena de recuperación final.
                     conversational_rag_chain = create_retrieval_chain(
-                        retriever, # <-- Esta es la simplificación clave
+                        retriever_chain,
                         stuff_chain
                     )
                     
-                    # 3. Invocar la cadena final
+                    # 4. Invocar la cadena final
                     response = conversational_rag_chain.invoke({
                         "chat_history": st.session_state.messages[:-1],
                         "input": user_prompt
                     })
                     
-                    # 4. Mostrar y guardar la respuesta
+                    # 5. Mostrar y guardar la respuesta
                     answer = response['answer']
                     st.write(answer)
                     st.session_state.messages.append(AIMessage(content=answer))
