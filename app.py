@@ -70,10 +70,10 @@ def load_and_index_docs(api_key):
         
         # 4. Split Documents
         # --- AJUSTE DE MÁXIMA PRECISIÓN ---
-        # Trozos más pequeños (500) con superposición (100)
+        # Trozos más pequeños (300) con superposición (50)
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500, 
-            chunk_overlap=100
+            chunk_size=300, 
+            chunk_overlap=50
         )
         split_docs = text_splitter.split_documents(all_docs)
         
@@ -91,8 +91,8 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 7. Create Retriever
-        # --- APLICANDO TU SOLUCIÓN: k=4 para reducir el ruido ---
-        return vector_store.as_retriever(search_kwargs={"k": 4})
+        # Búsqueda precisa con k=5
+        return vector_store.as_retriever(search_kwargs={"k": 5})
     
     except FileNotFoundError:
         st.error(f"Error: El archivo '{API_TEXT_FILE}' no se encontró.")
@@ -128,7 +128,7 @@ def get_stuff_chain(llm):
     <context>
     {{context}}
     </context>
-    """ # <-- ¡AQUÍ ESTÁ EL """ DE CIERRE QUE FALTABA!
+    """ 
     qa_prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         MessagesPlaceholder(variable_name="chat_history"),
