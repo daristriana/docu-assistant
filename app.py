@@ -293,36 +293,10 @@ if user_prompt:
                         "input": user_prompt
                     })
                     
-                    # --- LÓGICA DE CITACIÓN DE FUENTES ---
-                    
-                    # 5. Extraer la respuesta y el contexto
+                    # 5. Mostrar y guardar la respuesta
                     answer = response['answer']
-                    context_docs = response.get('context', [])
-                    
-                    is_failure_message = (SUPPORT_EMAIL in answer)
-                    full_answer = answer # Empezar con la respuesta del bot
-                    
-                    # 6. Añadir fuentes si la respuesta NO es un mensaje de fallo
-                    if context_docs and not is_failure_message:
-                        sources = set()
-                        for doc in context_docs:
-                            if 'source' in doc.metadata:
-                                source_url = doc.metadata['source']
-                                # Mapear el archivo local de vuelta a su URL web
-                                if source_url == API_TEXT_FILE:
-                                    source_url = "https://developer.fiskaly.com/api/sign-es/v1"
-                                
-                                # Limpiar los enlaces de anclaje (#) para URLs más limpias
-                                sources.add(source_url.split('#')[0])
-                        
-                        if sources:
-                            source_list = "\n".join(f"- {s}" for s in sources)
-                            # Añadir la citación (puedes cambiar "Source(s)" a "Fuentes:")
-                            full_answer += f"\n\n**Source(s):**\n{source_list}"
-
-                    # 7. Mostrar y guardar la respuesta completa
-                    st.write(full_answer)
-                    st.session_state.messages.append(AIMessage(content=full_answer))
+                    st.write(answer)
+                    st.session_state.messages.append(AIMessage(content=answer))
                     
                 except Exception as e:
                     error_msg = f"An error occurred: {e}"
