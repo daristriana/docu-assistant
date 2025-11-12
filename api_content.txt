@@ -1,304 +1,2194 @@
-import streamlit as st
-import google.generativeai as genai
+fiskaly SIGN ES (1.21.0)
+Download OpenAPI specification:Download
 
-# --- IMPORTS CORREGIDOS ---
-from langchain_community.document_loaders import WebBaseLoader, TextLoader
-from langchain_community.vectorstores import FAISS
-# ---
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
-from langchain_core.messages import HumanMessage, AIMessage
+Contact: info@fiskaly.com
+URL: https://fiskaly.com
+Imprint: fiskaly.com/impressum
+Privacy Policy: fiskaly.com/datenschutz
+Solution Details: fiskaly.com/signes
+Developer Guide: developer.fiskaly.com/sign-es
 
-# --- CONFIGURATION ---
+Introduction
+The fiskaly SIGN ES solution provides a RESTful API and ensures compliance with the Spanish TicketBAI legislation and Verifactu legislation.
 
-# --- LISTA DE URLS "PURA" DE ESPAÑA ---
-DOCS_URLS = [
-    "https://developer.fiskaly.com/",
-    "https://developer.fiskaly.com/api/",
-    "https://developer.fiskaly.com/products/kassensichv-de",
-    "https://developer.fiskaly.com/products/dsfinv-k-de",
-    "https://developer.fiskaly.com/sign-es/introduction",
-    "https://developer.fiskaly.com/sign-es/glossary",
-    "https://developer.fiskaly.com/sign-es/integration_process",
-    "https://developer.fiskaly.com/sign-es/guide_new_customers",
-    "https://developer.fiskaly.com/sign-es/guide_signde_customers",
-    "https://developer.fiskaly.com/sign-es/electronic_certificate",
-    "https://developer.fiskaly.com/sign-es/responsibility_declaration",
-    "https://developer.fiskaly.com/sign-es/sendingfiles_verifactu",
-    "https://developer.fiskaly.com/sign-es/invoicecompliance_verifactu",
-    "https://developer.fiskaly.com/sign-es/storage_verifactu",
-    "https://developer.fiskaly.com/sign-es/connectionloss_verifactu",
-    "https://developer.fiskaly.com/sign-es/registration",
-    "https://developer.fiskaly.com/sign-es/device_certificate",
-    "https://developer.fiskaly.com/sign-es/optional_device_certificate",
-    "https://developer.fiskaly.com/sign-es/sendingfiles",
-    "https://developer.fiskaly.com/sign-es/invoicecompliance",
-    "https://developer.fiskaly.com/sign-es/storage",
-    "https://developer.fiskaly.com/sign-es/connectionloss",
-    "https://developer.fiskaly.com/sign-es/digital_receipt"
+SIGN ES provides a test environment for integration and testing purposes as well as a dedicated live environment for performing the sending of official transactions (invoices). In order to access the live environment, please contact our sales team.
+
+The fiskaly SIGN ES is a platform-independent and software-only solution. Since this is a cloud-based API, the only requirement to integrate the fiskaly SIGN ES is a stable Internet connection. The API ...
+
+has resource-oriented URLs,
+
+accepts JSON-encoded request bodies,
+
+returns JSON-encoded responses,
+
+uses standard HTTP status codes and verbs, and
+
+is design to be easily integrated in any system.
+
+With the provided compliance information from the SIGN ES Invoices API response data, the process of issuing a fiscalized invoice can be completed through our environment-friendly and award-winning Digital Receipt.
+
+The Digital Receipt API allows the creation of the receipt in an electonic form, which the customer can easily obtain by scanning a QR code.
+
+fiskaly's Digital Receipt supports the receipt creation for all of fiskaly's SIGN solutions. For more information, reach out to our sales team. An example of the digital receipt for SIGN ES is shown in the following figure:
+
+
+Background
+SIGN ES implements legal requirements and technical guidelines for fiscalization compliance of POS softwares in Spain.
+
+The fiskaly SIGN ES API is based on the following Spanish regulations for TicketBAI in the Basque Region and the Anti-Fraud Law & Verifactu regulation for the rest of Spain.
+
+Verifactu in Spain:
+
+Royal Decree 1007/2023, of December 5th, approving the regulation that establishes the requirements to be adopted by the computerized or electronic systems and programs that support the invoicing processes of businessmen and professionals, and the standardization of invoicing record formats.
+
+Ministerial Order HAC/1177/2024 of October 17th, published on October 28th, establishing the technical, functional and content specifications for Invoicing Systems.
+
+
+TicketBAI in Araba:
+
+Foral Decree 48/2021, of October 5th. Approval of the regulations implementing the TicketBAI obligation.
+
+Foral Decree 802/2021, of December 27th. Technical and Functional requirements of TicketBAI Softwares and registration declaration for the TicketBAI Software Registry.
+
+
+TicketBAI in Bizkaia:
+
+Foral Decree 5/2020, of July 15th. Establishment of a comprehensive system for the control of income from economic activities.
+
+Foral Decree 1482/2020, of September 9th. Technical and Legal requirements of the guarantor software and registration declaration for the Guarantor Software Registry.
+
+
+TicketBAI in Gipuzkoa:
+
+Foral Decree 32/2020, of December 22nd. Approval of the regulations implementing the TicketBAI obligation.
+
+Foral Decree 521/2020, of December 23th. Technical and Functional requirements of TicketBAI Softwares and registration declaration for the TicketBAI Software Registry.
+
+
+Territories
+Spain has a complex tax system consisting of two different tax regimes: the ordinary and the foral. The regions belonging to the foral regime (Basque Country and Navarre) are entitled to develop and implement their own fiscal legislation. Some territories such as the Canary Islands, Ceuta and Melilla, due to their condition, follow a special fiscal regime, different from the rest of the peninsula.
+
+The fiskaly SIGN ES takes into consideration the particular requirements of the different Spanish territories, anticipating possible changes between the different provinces in Spain, such as sending invoicing registries to different tax authorities or sending specific information in each province. This is why the SIGN ES API includes the following territorial regions:
+
+Araba: indicates that the taxpayer has a fiscal address in Araba in the Basque Country, and has to comply with the specific TicketBAI requirements for this province.
+
+Bizkaia: indicates that the taxpayer has a fiscal address in Bizkaia in the Basque Country, and has to comply with the specific TicketBAI and BATUZ requirements for this province.
+
+Gipuzkoa: indicates that the taxpayer has a fiscal address in Gipuzkoa in the Basque Country, and has to comply with the specific TicketBAI requirements for this province.
+
+Navarre: indicates that the taxpayer has a fiscal address in the autonomous community of Navarre and has to comply with the specific requirements of this province.
+
+Other Territories of Spain: indicates that the taxpayer has a fiscal address in any other autonomous community of Spain and has to comply with the specific requirements of the Verifactu legislation. The following provinces are considered: Andalusia, Aragon, Principality of Asturias, Cantabria, Castilla-La Mancha, Castile and Leon, Catalonia, Extremadura, Galicia, Balearic Islands, La Rioja, Madrid Region, Murcia Region, and Valencian Community.
+
+Canary Islands: indicates that the taxpayer has a fiscal address in the Canary Islands and has to comply with the specific requirements of this province.
+
+Ceuta: indicates that the taxpayer has a fiscal address in the autonomous city of Ceuta and has to comply with the specific legal requirements.
+
+Melilla: indicates that the taxpayer has a fiscal address in the autonomous city of Melilla and has to comply with the specific legal requirements.
+
+Solution
+The fiskaly SIGN ES solution provides a 100% legally compliant TicketBAI and Verifactu implementation in order to generate digital signatures for invoicing transactions. SIGN ES is already a registered guarantor software for TicketBAI in the Basque provinces.
+
+All SIGN ES related services are operated by fiskaly within the Google Cloud Platform at the geographical data center region Madrid (europe-southwest1).
+
+Guides
+If it's the first time you are implementing one of fiskaly's SIGN solutions, we recommend that you first have a look at our guide for new customers where you will find an explanation of how to create organizations and API keys, as well as a first overview of our SIGN ES API endpoints.
+
+If you have already implemented our SIGN DE API, we have prepared an integration guide for existing customers where you will find similarities and differences between the different endpoints compared to SIGN ES.
+
+Changes
+The up-to-date information below is organized in a change log format which is available in the following subscribable feed formats as well: RSS, Atom, and JSON.
+
+
+1.21.0 [2025-11-06] Third Party Invoicing
+added possibility to issue invoices through third parties via the optional third_party taxpayer configuration in verifactu territories
+added support for characters Ãã, Õõ and Øø in legal names, addresses and invoice text
+internal improvements
+
+1.20.2 [2025-10-28] Internal Improvements
+added OSS_IOSS vat regime
+improved API documentation and field descriptions
+internal improvements
+
+1.20.1 [2025-10-17] Internal Improvements
+corrected the internal behavior when issued_at is not provided in simplified enrichments: the default now uses Europe/Madrid local time instead of UTC
+added new IGIC exlusive exemption causes TAXABLE_EXEMPT_7 and TAXABLE_EXEMPT_8
+added new IGIC exlcusive VAT regimes RETAIL_TRADERS, SMALL_PROFESSIONALS and INTERNAL_IGIC_EXCEMPT
+
+1.20.0 [2025-10-14] Draft Invoices
+added new invoice type DRAFT to create simplified and complete draft invoices
+added new field exception_unidentified to support complete invoices without a recipient (verifactu only)
+added new VAT regime 04 Investment Gold
+added new VAT regime 15 Successive Transactions Pending
+improved taxpayer agreement validation
+
+1.19.0 [2025-10-03] Issue Date Behavior
+corrected the internal behavior when issued_at is not provided: the default now uses Europe/Madrid local time instead of UTC
+clarified documentation for field issued_at
+fixed the mapping of the INCIDENT annotation to the Verifactu XML file
+
+1.18.1 [2025-09-16] Internal Improvements
+added CASH_CRITERIA vat regime
+added alternative issued_at timestamp format with timezone information
+internal improvements
+
+1.18.0 [2025-09-10] Summary Invoices
+added possibility to issue summary (recapitulative) invoices
+added possibility to issue summary correction (rappel) invoices
+fixed an issue where the transaction date was not correctly mapped for verifactu invoices
+internal improvements
+
+1.17.3 [2025-09-02] Internal Improvements
+added RENT_PREMISES vat regime
+added additional characters + and € for InvoiceText
+added special characters to the address number field
+internal improvements
+
+1.17.2 [2025-08-25] Internal Improvements
+fixed rare rounding issues in verifactu invoices
+internal improvements
+
+1.17.1 [2025-08-08] Internal Improvements
+added registered flag for NationalIdentification to indicate if a recipient is not yet registered with AEAT in verifactu
+added additional character ' for LegalName, AddressLine and InvoiceText
+updated postman collection with examples for AEAT and VIES validation services
+internal improvements
+
+1.17.0 [2025-07-29] Tax Number Validation
+added tax number validation endpoint, supporting AEAT and VIES services
+added new invoice system types OTHER_TAX_IVA, OTHER_TAX_IGIC, and OTHER_TAX_IPSI for transactions subject to other territories
+added additional characters & ß for LegalName
+added additional characters \ & @ \r ß # for InvoiceText
+updated postman collection for taxpayer social collaboration agreement workflow
+internal improvements
+
+1.16.1 [2025-07-14] Travel Agencies Regimes
+added TRAVEL_AGENCIES vat regime
+added TRAVEL_AGENCY_MEDIATORS vat regime
+implemented taxpayer social collaboration agreement workflow
+updated postman collection
+internal storage and transmission improvements
+
+1.16.0 [2025-06-25] Invoicing by Recipient
+added possibility to issue invoices by recipient for verifactu taxpayers
+added ANTIQUES vat regime
+added AGRICULTURE vat regime
+internal storage and transmission improvements
+
+1.15.1 [2025-06-13] Internal Improvements
+changed the item limit to 10000 for verifactu invoices
+internal improvements of the verifactu transmission
+
+1.15.0 [2025-05-27] Verifactu Enablement
+enabled creation of taxpayers for the following territories in LIVE environment: Spain_Other, Ceuta, Melilla and Canary Islands
+enabled transmission of Verifactu invoices in LIVE environment
+added batch sending capabilities for Verifactu transmission
+added endpoints for social collaboration workflow
+added possibility to add address and email information to taxpayers
+increased the maximum signer limit for Verifactu taxpayers to 10
+fixed mapping of EQUIVALANCE_SURCHARGE in Verifactu
+
+1.14.0 [2025-04-23] API Improvements
+clarified issued_at and transaction_date description
+clarified tax_number description if used as international recipient
+added additional characters for invoice text, legal name and address
+fixed endpoint mapping of Ceuta, Melilla and Canary Islands taxpayer territories
+fix issuing of invoices with the same number and series but different years
+for verifactu signers a VerifactuCertificate is returned instead of a TicketbaiDeviceCertificate
+internal improvements
+
+1.13.0 [2025-02-20] Verifactu Transmission
+enabled transmission of invoices to tax authorities test endpoints for Verifactu territories
+enabled Ceuta, Melilla and Canary Islands taxpayer territories
+added remedy functionality for Verifactu
+added endpoint to allow permanently disabling a taxpayer
+improved internal xml mapping
+
+1.12.1 [2025-02-03] Remedies with International Recipients
+fixed mapping of international recipients ID Type for remedy invoices
+
+1.12.0 [2025-01-20] Remedy Improvements
+improved remedy functionality in Bizkaia:
+allowing cancellation of remedies
+remedy offline invoices through the use of EXTERNAL invoices
+remedy failed remedies in state REQUIRES_INSPECTION
+fixed mapping of TicketBAI NON_TAXABLE types
+fixed mapping of issue dates for ENRICHMENT invoices
+improved internal certificate handling
+
+1.11.1 [2024-12-11] Internal Improvements
+improvements to transmission of cancellation XML records
+
+1.11.0 [2024-12-04] Tax Types and Verifactu API Preparation
+added the optional vat_type field, which is available in the API schema InvoiceItem
+added the optional responsibility_declaration field, which is available in the API schema Software
+improved internal mapping of Verifactu invoices
+improved API documentation in advance of Verifactu
+
+1.10.0 [2024-11-18] Remedy invoices for Bizkaia
+enabled remedy functionality for Bizkaia
+improved internal validations for creation of XML records
+
+1.9.0 [2024-10-25] Remedy invoices
+enabled remedy functionality for Araba and Gipuzkoa regions
+improvements to creation of and transmission of XML records
+
+1.8.2 [2024-09-19] Invoice Line Discount Amount
+improved TicketBAI XML creation related to item discount amounts
+
+1.8.1 [2024-09-12] Internal Improvements
+improved internal creation of Validation URLs
+improved handling of enrichment invoices
+improved internal creation of clients
+
+1.8.0 [2024-08-13] Resending of Invoices
+enabled resending of invoices through the REMEDY functionality in Bizkaia, which can be used in case of transmission errors due to a not registered certificate or to update a wrongfully set IndividualAnnotation, e.g. a wrong activity code
+fixed encoding of Validation URLs which could lead to invalid URLs in certain cases
+improved TicketBAI XML creation and transmission during high load scenarios
+
+1.7.2 [2024-07-18] Internal Improvements
+improved internal transmission handling
+improved software endpoint response
+
+1.7.1 [2024-06-25] API and Transmission
+improved TicketBAI XML creation and transmission towards Bizkaia
+
+1.7.0 [2024-06-04] Verifactu API
+added Coupon to the API schema of Correcting invoices, which can be set for corrections of simplified invoices or complete invoices with type CORRECTION_1, in Bizkaia and all Verifactu territories
+added Incident annotation, which allows for providing information about technical incidents during the creation of invoices
+enabled the creation of taxpayers in the SPAIN_OTHER territory to allow creation of taxpayers that fall under the Verifactu legislation in TEST environments
+enabled the creation of invoices for taxpayers that fall under the Verifactu legislation in TEST environments
+improved TicketBAI XML creation and transmission towards territorial tax authority servers
+
+1.6.0 [2024-04-11] Batuz Sending for Individuals
+added Annotations to the API schema, which allows for adding territory or legislation specific information to an invoice
+provided functionality for transmission of invoices for individuals through the IndividualAnnotation, which can be added either while first issuing the invoice or later through PATCH
+added the vat_withholding field, which is available in the API schema CompleteInvoice
+improved TicketBAI XML transmission towards territorial tax authority servers
+
+1.5.6 [2024-03-21] Invoice Text
+added colon character (:) support for API schema InvoiceText and ExtendedSpecialAlphaNumerical250 which is used in the API schema SimplifiedInvoice as well as in InvoiceItem and allows to express colon-based description texts
+improved TicketBAI XML transmission towards territorial tax authority servers
+
+1.5.5 [2024-02-29] Invoicing
+added NON_TAXABLE_4 for NotTaxableCause API schema to create invoices for sales carried out on behalf of third parties
+
+1.5.4 [2024-02-14] External Invoice Referencing
+added EXTERNAL invoice type for createInvoice API operation to represent and reference invoices in SIGN ES that where issued outside of the SIGN ES system boundary
+updated CONCEPT description in the API documentation
+
+1.5.3 [2024-01-30] LROE Transmission
+provided the integration of TicketBAI XML files into BATUZ/LROE chapter 1.1 XML records for the BIZKAIA taxpayer territory
+creation and sending of LROE records is already enabled in the production TEST environment
+creation and sending of LROE records will be automatically activated for the production LIVE environment on 2024-02-01 00:00:00 UTC+1
+renamed API schema TicketbaiCommunication to InvoiceExportCommunication
+renamed API schema TicketbaiXML to TransmissionFile
+updated Spanish API documentation
+
+1.5.2 [2024-01-10] TicketBAI and Taxpayer
+enabled TicketBAI invoice registration and cancellation XML file creation and sending in version v1.2.2 in the production LIVE system
+improved Taxpayer API response to provide the taxpayer type information which is either a COMPANY or an INDIVIDUAL based on a tax number distinction
+provided typed API schema for TaxpayerCreateRequest
+refined the TaxNumber regex string pattern
+
+1.5.1 [2023-12-30] TicketBAI Signature
+updated BIZKAIA signature policy to v1.1
+improved XAdES-EPES signing process and signature creation
+provided masculine ordinal character support in API schema ExtendedAlphaNumerical120, ExtendedAlphaNumerical250, and ExtendedSpecialAlphaNumerical250
+increased decimal place precision up to 8 digits in API schema InvoiceItemUnitAmount, InvoiceItemFullAmount, InvoiceItemDiscount, and InvoiceQuantity
+
+1.5.0 [2023-12-22] TicketBAI v1.2.2
+provided TicketBAI invoice registration and cancellation XML file creation and sending for version v1.2.2
+enabled in the production TEST system for now
+introduced new NON_TAXABLE_3 code
+
+1.4.4 [2023-11-30] Export in Dashboard
+provided Export UI integration in the fiskaly dashboard
+improved TicketBAI XML transmission towards territorial tax authority servers
+
+1.4.3 [2023-11-24] Product Localization
+provided Spanish translation of the OpenAPI specification
+added localization integration in the developer guide
+improved TicketBAI XML transmission towards territorial tax authority servers
+
+1.4.2 [2023-11-17] Invoicing and Transmission
+updated createInvoice breakdown computation for international recipients regarding the invoice item declaration of services and goods
+improved TicketBAI XML transmission towards territorial tax authority servers
+
+1.4.1 [2023-11-10] Verifactu Ready
+provided Territory enumerator values for Verifactu-based regions
+provided VerifactuInvoiceCompliance schema for Invoice API response schema SignedInvoice for Verifactu-based regions
+
+1.4.0 [2023-10-30] Export Functionality
+provided Exports resource functionality to create asynchronous exports of multiple invoices in form of downloadable ZIP archives
+enabled createExport, updateExport, retrieveExport, listExport, and downloadExport API operation
+updated Invoice API documentation of invoice types
+added InvoiceAdditionalVat API schema and invoice functionality to apply additional VAT amount and rates to invoice items
+
+1.3.2 [2023-10-11] Invoice Enrichment
+enabled ENRICHMENT functionality in order to enrich simplified invoices with recipient information
+provided EnrichmentInvoice API request schema for the createInvoice API operation
+updated VAT rate API field description for the usage of the InvoicePercentage type in the InvoiceWithVatCategory schema
+provided 400 API error response code description to TaxpayerResponse, SingerResponse, SignersResponse, ClientResponse, ClientsResponse, InvoiceResponse, InvoicesResponse, ExportResponse, and SoftwareResponse.
+
+1.3.1 [2023-09-29] Invoice Transmission
+improved Invoices sending transmission behavior to corresponding tax authority services
+improved exportInvoice API operation performance providing the registration request XML data
+
+1.3.0 [2023-09-22] External Certificates
+enabled updateSigner external device certificate support
+updated Certificate API request schema of updateSigner API operation
+improved SignedInvoice API response schema of Invoices API operations by adding InvoiceSigner and InvoiceClient information
+provided new sections in the developer guide for external device certificate creation
+
+1.2.1 [2023-09-01] Invoicing and Pagination
+modified createInvoice validation behavior and direct validation feedback in the SignedInvoice API response validations field
+improved createInvoice signing request performance
+improved TicketbaiInvoiceIdentifier string regex pattern to allow more alpha-numerical and special characters
+provided Pagination support for all listing endpoints to page through large results sets with a pagination limit and a token-based approach
+
+1.2.0 [2023-08-23] Invoice Search and Listing
+enabled createInvoice functionality for creating correction invoices by differences
+updated ValidationError enumeration API documentation with detailed enumerator code description
+provided searchInvoices API endpoint to filter and search for taxpayers' invoices by using optional query parameters for invoice number, invoice series, and invoice issuing time range
+improved Invoices request handling and concurrent processing
+changed listSigners, listClients, and listInvoices API response schema layout and content to return a results array of resource schema elements consisting of the actual content and metadata
+
+1.1.1 [2023-08-04] Invoice Validation & Metadata
+provided Invoices validation with dedicated request HTTP error 422 for invalid invoice requests with dedicated ValidationError code and description in the validations schema field
+provided Invoices transmission validation error propagation in the API for the SignedInvoice response validations schema field
+updated createInvoice API request to allow optional issued_at field to specify the invoice issue timestamp
+updated createInvoice API request to allow optional transaction_date field to specify the invoice transaction date
+provided Invoices export system with taxable exempt causes
+improved Invoices endpoint functionality and enabled the corresponding Metadata functionality
+improved Clients endpoint functionality and enabled the corresponding Metadata functionality
+improved Signers endpoint functionality and enabled the corresponding Metadata functionality
+improved Taxpayer endpoint functionality and enabled the corresponding Metadata functionality
+
+1.1.0 [2023-06-23] Complete Invoice Functionality
+enabled Invoices endpoint functionality to handle CompleteInvoice API request schema to issue COMPLETE invoices which contains recipient information and provides additional VAT systems, VAT categories, and the new economic concept for national and international invoicing transactions
+updated Invoices endpoint functionality to handle CorrectionInvoice API request schema to perform CORRECTION of COMPLETE to COMPLETE invoices as well as the "upgrading" of SIMPLIFIED invoices to COMPLETE invoices
+improved Signers endpoint functionality
+
+1.0.1 [2023-06-16] Complete Invoice Schema
+refined CompleteInvoice API request schema of Recipients structure for national and international invoice recipient information
+extended InvoiceItem API schema with new optional economic Concept abstraction
+improved Authentication endpoint functionality for LIVE environment tokens
+updated Taxpayer endpoint functionality that all information changes are only allowed without any ENABLED resources
+
+1.0.0 [2023-06-14] Production Live Environment
+Enabled live.es.sign.fiskaly.com production live environment
+Enabled Software endpoint functionality for in-person verification
+Improved API documentation and field descriptions
+
+0.15.0 [2023-06-11] Invoice Correction Functionality
+Enabled createInvoice API CORRECTION schema and functionality
+Updated Invoices API response schema
+Improved Invoices endpoint functionality
+
+0.14.0 [2023-06-02] Cancel Invoice Functionality
+Enabled updateInvoice API functionality
+Updated updateInvoice API request schema
+Updated Invoice response schema
+Improved Invoices endpoint functionality
+
+0.13.0 [2023-05-29] Production Test Environment
+Enabled test.es.sign.fiskaly.com production test environment
+Improved Data Exports endpoint export functionality
+Improved Invoices endpoint invoicing functionality
+
+0.12.0 [2023-05-26] Export Invoice Functionality
+Enabled Data Exports endpoint export functionality
+Improved Invoices endpoint invoicing functionality
+Improved Signers endpoint maintenance functionality
+
+0.11.2 [2023-05-16] Invoicing Functionality
+Updated SimplifiedInvoice request schema documentation
+Improved Invoices endpoint invoicing functionality
+Improved Clients endpoint maintenance functionality
+Improved Signers endpoint maintenance functionality
+
+0.11.1 [2023-04-28] Postman Collection
+Enabled Postman integration for retrieval of Postman collection and environment configurations
+Updated Invoice endpoint functionality
+Added Quick Start API documentation section
+Added FAQs API documentation section
+
+0.11.0 [2023-04-23] Simplified Invoicing
+Enabled createInvoice API functionality
+Enabled retrieveInvoice API functionality
+Enabled listInvoices API functionality
+Updated SimplifiedInvoice request schema
+Updated Invoice response schema
+Improved Signers endpoint maintenance functionality
+Improved Clients endpoint maintenance functionality
+
+0.10.0 [2023-04-17] Invoice API
+Updated SimplifiedInvoice request schema
+Updated Invoice response schema
+Improved Taxpayer endpoint maintenance functionality
+Improved Signers endpoint maintenance functionality
+Improved Clients endpoint maintenance functionality
+
+0.9.0 [2023-04-02] Client Functionality
+Enabled Clients endpoint maintenance functionality with default signer allocation
+Updated Signers endpoint maintenance functionality
+Updated Taxpayer endpoint maintenance functionality
+Updated Authentication endpoint functionality
+Updated Authentication endpoint API response schema
+Refined Invoices endpoint API response schema
+
+0.8.0 [2023-03-29] Signer Functionality
+Refined createSigner endpoint API error responses
+Refined updateSigner endpoint API error responses
+Refined retrieveSigner endpoint API error responses
+Refined listSigner endpoint API error responses
+Refined createClient endpoint API error responses
+Refined updateClient endpoint API error responses
+Refined retrieveClient endpoint API error responses
+Refined listClient endpoint API error responses
+Updated SigningDevice API schema with explicit certificate field
+Updated maintenance functionality for Taxpayer information
+Enabled maintenance functionality for Signer with managed certificates
+
+0.7.0 [2023-03-22] Update of API
+Changes affect the API Taxpayer endpoints
+Renamed TicketbaiIssuer schema field tax_id to tax_number
+Renamed TicketbaiIssuer schema field name to legal_name
+Renamed TicketbaiVatRegistrationNumber schema to TicketbaiTaxNumber
+
+0.6.0 [2023-03-20] Update of API
+Updated Authentication, Taxpayer, and Signer endpoint request/response schema
+Updated ErrorResponse schema
+Introduced generic BadRequestResponse, UnauthorizedAccessResponse, ResourceNotFoundResponse, and InternalServerErrorResponse schema
+Service Authentication functionality enabled
+Service Taxpayer functionality enabled
+Product changes are integrated in OpenAPI specification and available through RSS, Atom, and a generic JSON-based feeds
+
+0.5.0 [2023-02-23] Update of API
+Introduced ErrorResponse endpoint response schema type
+Updated Client response schema
+Introduced SignerState schema
+Provided deployment cycle of service
+
+0.4.0 [2023-02-07] Rework of API
+Updated endpoint response schema types
+Updated SigningDevice schema
+Introduced SignerState schema
+
+0.3.0 [2023-01-30] Update of API
+Updated TicketBaiInvoiceState schema
+Changed TicketBaiInvoiceTransmission to TicketBaiInvoiceCancellationState
+Updated TicketBaiIssuer documentation
+Updated TicketBaiVatRegistrationNumber documentation
+Changed Decimal3p2 regex patterns
+
+0.2.0 [2023-01-20] Rework of API
+Updated UniversallyUniqueIdentifierV4 schema description
+Changed AccessToken refresh key from token to refresh_token
+Provided basic test server functionality
+
+0.1.1 [2023-01-13] Rework of API
+Updated AccessToken schema
+Changed ApiKeyString and ApiSecretString representation
+Provided PKCS and PEM formats
+Updates TicketBAI regime and taxable codes
+
+0.1.0 [2023-01-05] Initial Release
+Provides draft of OpenAPI specification of SIGN ES
+Defines TicketBAI schemas
+Defines SIGN ES endpoints
+
+Versioning
+The fiskaly SIGN ES follows Semantic Versioning. The version number has a pattern of MAJOR.MINOR.PATCH. We increment the
+
+MAJOR version when we make incompatible API changes,
+
+MINOR version when we add functionality in a backwards-compatible manner, and
+
+PATCH version when we make backwards-compatible bug fixes.
+
+Resources
+This API uses Universally Unique IDentifiers (UUID) to address the resources created in the SIGN ES solution.
+
+In order to provide truly (pseudo-)randomized identifiers for SIGN ES resources, the API only allows UUIDs in version 4 (UUIDv4).
+
+The used UUIDv4-based identifiers for all SIGN ES resources like Signer, Client, Invoice, and Export should always be automatically generated by using a (standard) library functionality provided by your programming language choice e.g. JavaScript or Golang.
+
+Quick Start
+For a quick first demo, you may use Postman. We prepared a Postman collection that allows you to step through the most important functions of this API.
+
+Download the Postman application.
+
+
+Create an API Key and API Secret via the fiskaly dashboard: 
+
+
+Insert your API Key and API Secret to download your personalized fiskaly SIGN ES Postman Environment JSON based configuration file:
+
+API Key	
+api_key
+API Secret	
+api_secret
+
+Download the fiskaly SIGN ES Postman Collection JSON based configuration file:
+
+
+Start Postman and import the downloaded Postman environment and collection files: 
+
+
+Select the fiskaly SIGN ES Postman environment and run the collection: 
+
+
+FAQs
+The FAQs of SIGN ES are provided at the fiskaly support page.
+
+Authentication
+The fiskaly APIs use a JWT based security mechanism to authenticate API requests. API requests without authentication will fail with an unauthorized access HTTP error. The fiskaly APIs process only https based request. Plain http based requests are redirected to https.
+
+JWT
+A JSON Web Token (JWT) used for access control and authorization. The JWT can be obtained through a retrieve authentication token API request.
+
+Retrieve access token
+To access a fiskaly API, you need to have a valid JWT access_token. This endpoint creates the access token with your api_key and api_secret.
+
+If you do not have an api_key, you can create one via Management API endpoint createApiKey or the fiskaly dashboard.
+
+The api_secret will be generated for you after you create the api_key.
+
+The access_token token must be sent with every following request in the Authorization header field using the Bearer authentication scheme.
+
+See details here.
+
+Request Body schema: application/json
+content
+required
+ApiKeySecretAuthentication (object) or RefreshTokenAuthentication (object)
+One of ApiKeySecretAuthenticationRefreshTokenAuthentication
+api_key
+required
+string (ApiKeyString)
+Key string of the API key and secret pair.
+
+api_secret
+required
+string (ApiSecretString)
+Secret string of the API key and secret pair.
+
+Responses
+200 Successful authentication.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+post
+/auth
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"api_key": "string",
+"api_secret": "string"
+}
+}
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"access_token": {},
+"refresh_token": {},
+"claims": {}
+}
+}
+Taxpayer
+Create taxpayer
+This endpoint is used to create the taxpayer (invoice issuer) information.
+
+Authorizations:
+JWT
+Request Body schema: application/json
+content
+required
+object (TaxpayerCreateContent)
+Represents the taxpayer information which is used for issuing invoices for all signing devices within the context of the managed organization which is associated in the JWT. It consists of the invoice issuer (taxpayer) information and the territory representing the legal address of the taxpayer.
+
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns taxpayer information.
+400 Bad (invalid) request.
+401 Unauthorized access.
+405 The request method is not allowed.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+
+put
+/taxpayer
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"issuer": {},
+"territory": "ARABA"
+}
+}
+Response samples
+200400401405409500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"issuer": {},
+"territory": "ARABA",
+"address": {},
+"email": "test@email.es",
+"third_party": {},
+"type": "COMPANY",
+"state": "ENABLED"
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Update a taxpayer
+In order to update a specific taxpayer state, this endpoint allows to disable (deactivate) a taxpayer permanently and/or update the taxpayer metadata.
+
+Authorizations:
+JWT
+Request Body schema: application/json
+content	
+object (TaxpayerUpdateContent)
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns taxpayer information.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+patch
+/taxpayer
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+{ }
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"issuer": {},
+"territory": "ARABA",
+"address": {},
+"email": "test@email.es",
+"third_party": {},
+"type": "COMPANY",
+"state": "ENABLED"
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Retrieve taxpayer
+This endpoint is used to retrieve the taxpayer (invoice issuer) information.
+
+Authorizations:
+JWT
+Responses
+200 Returns taxpayer information.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+get
+/taxpayer
+
+
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"issuer": {},
+"territory": "ARABA",
+"address": {},
+"email": "test@email.es",
+"third_party": {},
+"type": "COMPANY",
+"state": "ENABLED"
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Generate agreement
+Generates a draft for a social collaborator agreement document. This document is required for taxpayers under Verifactu legislation to authorize fiskaly to transmit invoices on their behalf. Taxpayers must add their address using the update endpoint.
+
+The generated document must be digitally signed by the taxpayer's legal representative and uploaded through this API. For an individual taxpayer, the legal representative is the taxpayer itself, while for companies personal information of a representative must be provided.
+
+Multiple agreement drafts can be generated without invalidating existing valid ones.
+
+Authorizations:
+JWT
+Request Body schema: application/json
+content
+required
+object (GenerateAgreementContent)
+representative	
+object (Representative)
+Representative holds personal identification for the representative of a taxpayer.
+
+full_name
+required
+string (LegalName) [ 1 .. 120 ] characters ^( *[0-9A-Za-zñÑáÁàÀãÃéÉèÈíÍïÏóÓòÒõÕØøúÚüÜĿŀç...Show pattern
+The legal name is either the full name, a company or a trading name.
+
+tax_number
+required
+string (TaxNumber) = 9 characters ^(([A-Za-z][0-9]{7}[A-Za-z])|([0-9]{8}[A-Za-z...Show pattern
+The tax number (VAT registration number, NIF) of a taxpayer.
+
+address
+required
+object (Address)
+Address of a legal entity.
+
+Responses
+200 Returns filled agreement to be signed.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+501 Functionality of request is not implemented.
+
+post
+/taxpayer/agreement
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": { }
+}
+Response samples
+400401404409500501
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"status": 401,
+"code": "E_UNAUTHORIZED_ACCESS",
+"error": "Unauthorized Access",
+"message": "Not authorized to perform this operation."
+}
+}
+Upload signed agreement
+This endpoint enables the upload of a digitally signed agreement previously generated through this API. It accepts a digitally signed agreement in PAdES format. The signature must be valid and applied by the taxpayer's representative.
+
+Successful uploads will replace any existing agreement associated with the resource.
+
+By signing and submitting this AUTHORIZATION, the TAXPAYER expressly acknowledges and assumes responsibility for the truthfulness and accuracy of the information contained therein, declaring that such information is complete, true, and accurate as of the date of signature. Furthermore, the TAXPAYER expressly and unequivocally grants Fiskaly Iberia the authority to act as their representative for the purpose of submitting the invoice files generated through the Invoicing Information System (SIF) to the Spanish Tax Agency.
+
+Authorizations:
+JWT
+Request Body schema: application/json
+content
+required
+object (SignedTaxpayerAgreement)
+binary
+required
+string <byte> (Base64EncodedPdfDocument) <= 4194304 characters
+Base64-encoded pdf document. The maximum size of the file is 3MB.
+
+Responses
+200 Returns latest uploaded valid agreement.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+501 Functionality of request is not implemented.
+
+put
+/taxpayer/agreement
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"binary": "string"
+}
+}
+Response samples
+200400401409500501
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"document_url": "https://live.es.sign.fiskaly.com/api/v1/verifactu/aaaa-aaaaaa-aaaaa-aaaa.pdf",
+"representative": {},
+"created_at": "2024-12-24T15:35:01+02:00"
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Retrieve agreement
+This endpoint allows to retrieve the taxpayer's the latest uploaded social collaborator agreement.
+
+Authorizations:
+JWT
+Responses
+200 Returns latest uploaded valid agreement.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+get
+/taxpayer/agreement
+
+
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"document_url": "https://live.es.sign.fiskaly.com/api/v1/verifactu/aaaa-aaaaaa-aaaaa-aaaa.pdf",
+"representative": {},
+"created_at": "2024-12-24T15:35:01+02:00"
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Download agreement
+This endpoint allows to download the taxpayer's latest uploaded social collaborator agreement as PDF.
+
+Authorizations:
+JWT
+Responses
+200 Returns the pdf document of the latest uploaded valid agreement.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+get
+/taxpayer/agreement.pdf
+
+
+Response samples
+400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"status": 401,
+"code": "E_UNAUTHORIZED_ACCESS",
+"error": "Unauthorized Access",
+"message": "Not authorized to perform this operation."
+}
+}
+Signers
+Create a signer
+This endpoint is used to create a signing device (signer). SIGN ES manages certificates for Verifactu and TicketBAI.
+
+There needs to be at least one signing device present per managed organization in order to issue invoices.
+A signing device allows to use a dedicated certificate and keeps track of the invoicing chain.
+
+For TicketBAI, a signing device allows to use a dedicated device certificate of type 'Invoicing Point' and generate a signature chain for one or multiple client devices. Each signing device needs a device certificate. If no external device certificate is provided during the signing device creation, by default SIGN ES uses a fiskaly GmbH managed device certificate.
+
+For Verifactu, SIGN ES will use by default an electronic certificate managed by fiskaly GmbH for the signature of files, chaining per taxpayer and transmission to the tax authorities.
+
+This call is idempotent.
+
+Authorizations:
+JWT
+path Parameters
+signer_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a signer (signing device) resource by using a randomized UUIDv4 format.
+
+Request Body schema: application/json
+content	
+object (Signer)
+Represents the signing device which performs the invoice chaining and signing operations.
+
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns a signing device.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+
+put
+/signers/{signer_id}
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+{ }
+Response samples
+200400401409500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "ENABLED",
+"certificate": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Update a signer
+In order to update a specific signing device state, this endpoint allows to disable (deactivate) a signing device permanently and/or update the signing device metadata.
+
+Authorizations:
+JWT
+path Parameters
+signer_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a signer (signing device) resource by using a randomized UUIDv4 format.
+
+Request Body schema: application/json
+content	
+object
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns a signing device.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+patch
+/signers/{signer_id}
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+{ }
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "ENABLED",
+"certificate": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Retrieve a signer
+Retrieve a specific signing device (signer) of an organization.
+
+Authorizations:
+JWT
+path Parameters
+signer_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a signer (signing device) resource by using a randomized UUIDv4 format.
+
+Responses
+200 Returns a signing device.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+get
+/signers/{signer_id}
+
+
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "ENABLED",
+"certificate": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+List signers
+Retrieve a list of signing devices (signers) of an organization.
+
+Authorizations:
+JWT
+query Parameters
+limit	
+integer (PaginationLimit) [ 1 .. 100 ]
+Default: 10
+Represents the pagination limit of the results set of a listing endpoint.
+
+token	
+string (PaginationToken) <= 1024 characters ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{4}|[A-...Show pattern
+Represents the pagination token, which is used as an index pointer to the next page relative to the current page in Base64 encoding.
+
+Responses
+200 Returns a list of signing devices.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+get
+/signers
+
+
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"results": [
+{}
+],
+"pagination": {
+"next": "string",
+"token": "string",
+"limit": 10
+}
+}
+Clients
+Create a client
+This endpoint is used to create a client device.
+A client device allows to uniquely identify (through the provided device_id path parameter) a terminal, POS system, application, or any other client that wants to issue invoices.
+
+In order to issue invoices you need one client per POS system and at least one signing device.
+
+This call is idempotent.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+Request Body schema: application/json
+content	
+object (Client)
+Represents an invoicing device which is accessed by an invoicing application, whether or not it accesses a remote server for this purpose. For example in the case of a web-based application, the serial number of the invoicing device will be that of the device on which the browser is installed, and not the remote server which it accesses to operate the application.
+
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns a client device.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+
+put
+/clients/{client_id}
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+{ }
+Response samples
+200400401409500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "ENABLED",
+"signer": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Update a client
+In order to update a specific client device state, this endpoint allows to disable (deactivate) a client device permanently and/or update the client device metadata.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+Request Body schema: application/json
+content	
+object
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns a client device.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+patch
+/clients/{client_id}
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+{ }
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "ENABLED",
+"signer": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Retrieve a client
+Retrieve a specific client device of an organization.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+Responses
+200 Returns a client device.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
+
+get
+/clients/{client_id}
+
+
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "ENABLED",
+"signer": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+List clients
+List of client devices of an organization.
+
+Authorizations:
+JWT
+query Parameters
+limit	
+integer (PaginationLimit) [ 1 .. 100 ]
+Default: 10
+Represents the pagination limit of the results set of a listing endpoint.
+
+token	
+string (PaginationToken) <= 1024 characters ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{4}|[A-...Show pattern
+Represents the pagination token, which is used as an index pointer to the next page relative to the current page in Base64 encoding.
+
+Responses
+200 Returns a list of client devices.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+get
+/clients
+
+
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"results": [
+{}
+],
+"pagination": {
+"next": "string",
+"token": "string",
+"limit": 10
+}
+}
+Software
+Retrieve software
+This endpoint is used to retrieve the SIGN ES software information according to the software registration for a configured taxpayer, which is needed in case of an in-person verification (audit use case).
+
+For more details, please refer to the software registration section of the SIGN ES the developer guide.
+
+Authorizations:
+JWT
+Responses
+200 Software information.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+
+get
+/software
+
+
+Response samples
+200400401409500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"company": {},
+"name": "0a1B2cD e3F45 ...",
+"license": "0a1B2cD ...",
+"version": "0a1B2cD ...",
+"responsibility_declaration": "https://live.es.sign.fiskaly.com/api/v1/verifactu/responsibility_declaration.pdf"
+}
+}
+Invoices
+The fiskaly SIGN ES API provides TicketBAI and Verifactu compliant invoice information in the response data of the createInvoice, updateInvoice, and retrieveInvoice endpoints below. This invoice information is required to be printed on an actual invoice, but we recommend to implement our Digital Receipt API to represent invoices in an electronic form.
+
+Create an invoice
+This endpoint is used to issue an invoice through a client device.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+invoice_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an invoice resource by using a randomized UUIDv4 format.
+
+query Parameters
+code	
+string (InvoiceRepresentationCode)
+Enum: "QR_CODE" "CENTERED_CODE" "PORTRAIT_CODE" "LANDSCAPE_CODE"
+Allows optionally to query the invoice compliance code in a specific representation (see TicketbaiRepresentationCode). By default the QR_CODE representation is used in the response, if the query parameter is omitted.
+
+Request Body schema: application/json
+content
+required
+any (Invoice)
+An invoice can be either of type SIMPLIFIED, COMPLETE, CORRECTING, ENRICHMENT, REMEDY or EXTERNAL.
+
+SIMPLIFIED: Issued up to 400 EUR (including VAT) or up to 3.000 EUR (including VAT) in many cases (retail sales, ambulances services, services to the customers home, transport of people and their luggage, hospitality and catering services, dance halls, and night clubs, among others. For more information, visit the tax authority information page. Simplified invoices can also be issued for correcting invoices and invoices authorized by the department of tax management.
+
+COMPLETE: Must be issued in the cases where a simplified invoice is not allowed to be issued. Includes information of the recipient of the invoice: Tax number identification (NIF) of recipient from other countries, full name or company name, and address with postal code (not mandatory in Bizkaia). And indicates itemization on invoice level for national recipients or on transaction level for provision of services or delivery of goods when the recipient is non-national. A complete invoice can be a summary that replaces multiple simplified invoices, according to Art. 13 of the Spanish Invoicing regulations.
+
+CORRECTING: Has to be issued in cases that one or more requirements of articles 6 (invoice content) and 7 (simplified invoice content) of the invoicing regulation are not met, or when the modification of the taxable base according to article 80 of law 37/1992 has occurred. For more details, please refer to the tax authority information page. A summary correction can also be issued.
+
+ENRICHMENT: Can be issued if the original invoice does not have recipients and the only change is to add one or more recipients.
+
+REMEDY: Can be issued to remedy incorrect invoice information which would not necessitate a correction by law.
+
+EXTERNAL: Can be used to create invoices that were already issued, but were not issued through SIGN ES. External invoices are never signed or registered to the tax authorities and cannot be cancelled. External invoices may be corrected or enriched through the CORRECTING and ENRICHMENT invoices.
+
+annotations	
+Array of objects (Annotations) = 1 items unique
+A list of unique annotations.
+
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns a signed invoice.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+429 Concurrent use of resource error occurred.
+500 Internal server error occurred.
+
+put
+/clients/{client_id}/invoices/{invoice_id}
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"type": "SIMPLIFIED",
+"number": "2022",
+"text": "0aÑá2cD?¡ é3F45Ç ...",
+"full_amount": "123456789012.34",
+"items": []
+}
+}
+Response samples
+200400401409429500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"signer": {},
+"client": {},
+"issued_at": "2024-12-24T15:35:01+02:00",
+"data": "string",
+"compliance": {},
+"correction": {},
+"remedy": {},
+"summary": {},
+"draft_id": {},
+"state": "ISSUED",
+"transmission": {},
+"validations": []
+},
+"annotations": [
+{}
+],
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Update an invoice
+This endpoint is used to cancel an already registered (created) invoice in the SIGN ES system, or to modify the metadata of an already created invoice.
+By performing a cancellation, the state of an invoice changes and initiates another synchronization to the tax authority to invalidate (cancel) the already registered invoice.
+
+When to cancel? In cases when it is not required to provide a correction. For example, when the operation was not carried out (DGT V0611/ 11-3-2011) and the invoice was not given to the customer.
+
+Once an invoice is cancelled, the same number and series number can’t be used again.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+invoice_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an invoice resource by using a randomized UUIDv4 format.
+
+query Parameters
+code	
+string (InvoiceRepresentationCode)
+Enum: "QR_CODE" "CENTERED_CODE" "PORTRAIT_CODE" "LANDSCAPE_CODE"
+Allows optionally to query the invoice compliance code in a specific representation (see TicketbaiRepresentationCode). By default the QR_CODE representation is used in the response, if the query parameter is omitted.
+
+Request Body schema: application/json
+content	
+object
+annotations	
+Array of objects (Annotations) = 1 items unique
+A list of unique annotations.
+
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+Responses
+200 Returns a signed invoice.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+patch
+/clients/{client_id}/invoices/{invoice_id}
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+{ }
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"signer": {},
+"client": {},
+"issued_at": "2024-12-24T15:35:01+02:00",
+"data": "string",
+"compliance": {},
+"correction": {},
+"remedy": {},
+"summary": {},
+"draft_id": {},
+"state": "ISSUED",
+"transmission": {},
+"validations": []
+},
+"annotations": [
+{}
+],
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Retrieve an invoice
+This endpoint returns an issued invoice from a client device.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+invoice_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an invoice resource by using a randomized UUIDv4 format.
+
+query Parameters
+code	
+string (InvoiceRepresentationCode)
+Enum: "QR_CODE" "CENTERED_CODE" "PORTRAIT_CODE" "LANDSCAPE_CODE"
+Allows optionally to query the invoice compliance code in a specific representation (see TicketbaiRepresentationCode). By default the QR_CODE representation is used in the response, if the query parameter is omitted.
+
+Responses
+200 Returns a signed invoice.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+get
+/clients/{client_id}/invoices/{invoice_id}
+
+
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"signer": {},
+"client": {},
+"issued_at": "2024-12-24T15:35:01+02:00",
+"data": "string",
+"compliance": {},
+"correction": {},
+"remedy": {},
+"summary": {},
+"draft_id": {},
+"state": "ISSUED",
+"transmission": {},
+"validations": []
+},
+"annotations": [
+{}
+],
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+List invoices
+This endpoint retrieves a list of issued invoices from a client device.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+query Parameters
+code	
+string (InvoiceRepresentationCode)
+Enum: "QR_CODE" "CENTERED_CODE" "PORTRAIT_CODE" "LANDSCAPE_CODE"
+Allows optionally to query the invoice compliance code in a specific representation (see TicketbaiRepresentationCode). By default the QR_CODE representation is used in the response, if the query parameter is omitted.
+
+limit	
+integer (PaginationLimit) [ 1 .. 100 ]
+Default: 10
+Represents the pagination limit of the results set of a listing endpoint.
+
+token	
+string (PaginationToken) <= 1024 characters ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{4}|[A-...Show pattern
+Represents the pagination token, which is used as an index pointer to the next page relative to the current page in Base64 encoding.
+
+Responses
+200 Returns a list of signed invoices.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+get
+/clients/{client_id}/invoices
+
+
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"results": [
+{}
+],
+"pagination": {
+"next": "string",
+"token": "string",
+"limit": 10
+}
+}
+Search invoices
+This endpoint retrieves a list of issued invoices for the taxpayer, optionally filtered by any combination of number, series, or issue date.
+Invoices are uniquely identified by their number, series and the year they are issued.
+
+The issue_date_from and issue_date_to parameters let you specify a time range in which the invoices were issued, where issued_at_from is inclusive and issue_at_to is exclusive.
+This means, if there was an invoice issued at 10-08-2023 15:04:03 and you specify a issued_at_from as 10-08-2023 15:04:03, the invoice will get included in the response, if you specifiy issued_at_to as 10-08-2023 15:04:03, it will not get included.
+
+Authorizations:
+JWT
+query Parameters
+number	
+string (TicketbaiInvoiceIdentifier) [ 1 .. 20 ] characters ^[0-9A-Z_/\-\.]{1,20}$
+Example: number=2022
+Uniquely identifies an invoice number in a given year.
+
+series	
+string (TicketbaiInvoiceIdentifier) [ 1 .. 20 ] characters ^[0-9A-Z_/\-\.]{1,20}$
+Example: series=2022
+Uniquely identifies an invoice series in a given year.
+
+issued_at_from	
+string (TimestampFormat19) = 19 characters ^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$
+Example: issued_at_from=24-12-1992 15:35:01
+Defines the earliest possible date of the invoice (inclusive).
+
+issued_at_to	
+string (TimestampFormat19) = 19 characters ^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$
+Example: issued_at_to=24-12-1992 15:35:01
+Defines the last possible date of the invoice (exclusive).
+
+client_id	
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: client_id=1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Defines the identifier of the client that issued the invoice.
+
+limit	
+integer (PaginationLimit) [ 1 .. 100 ]
+Default: 10
+Represents the pagination limit of the results set of a listing endpoint.
+
+token	
+string (PaginationToken) <= 1024 characters ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{4}|[A-...Show pattern
+Represents the pagination token, which is used as an index pointer to the next page relative to the current page in Base64 encoding.
+
+Responses
+200 Returns a list of signed invoices.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+get
+/invoices
+
+
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"results": [
+{}
+],
+"pagination": {
+"next": "string",
+"token": "string",
+"limit": 10
+}
+}
+Export an invoice
+This endpoint provides a synchronous export functionality of a single invoice transmission state in form of TicketBAI registration/cancellation request/response XML files.
+
+It is recommended to use this endpoint only to inspect a single invoice.
+For exporting and inspecting multiple invoices, use the export functionality.
+
+Authorizations:
+JWT
+path Parameters
+client_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies a client device resource by using a randomized UUIDv4 format.
+
+invoice_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an invoice resource by using a randomized UUIDv4 format.
+
+Responses
+200 Returns an invoice in the export XML format.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+
+get
+/clients/{client_id}/invoices/{invoice_id}/xml
+
+
+Response samples
+200400401409500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"registration": {},
+"cancellation": {}
+}
+}
+Validation
+Validate Tax Number
+Validates one or more tax numbers against the list of registered taxpayers. The AEAT registry supports the validation of multiple spanish tax numbers, while the VIES system for non-Spanish EU taxpayers supports only the validation of one tax number at a time. Since multiple systems allow validation of different tax number types, for example VAT or NIF, these types are summarized as TIN (Tax Identification Number).
+
+Authorizations:
+JWT
+Request Body schema: application/json
+content
+required
+any (TinValidationContent)
+Depending on the validation service used, this endpoint requires different parameters:
+
+AEAT: List of entries, consisting of tax number and legal name, where the legal name is optional for companies.
+VIES: Single entry, consisting of tax number and country code.
+Since the AEAT validation service does not have a test endpoint, this call returns INVALID for all tax numbers in TEST. To allow for integration tests, the AEAT validation type returns the following values if called with specific tax numbers in TEST environments:
+
+T00000001: INVALID_SIMILAR
+T00000002: VALID
+T00000003: VALID_REMOVED
+T00000004: VALID_REVOKED
+type
+required
+string
+
+AEAT
+AEAT
+entries
+required
+Array of objects (TinValidationAEATEntries) [ 1 .. 1000 ] items
+Multiple TIN validation requests to AEAT.
+
+Responses
+200 Returns the result of a Tax Number Validation request.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+501 Functionality of request is not implemented.
+
+post
+/validation/tin
+
+
+Request samples
+Payload
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"type": "AEAT",
+"entries": []
+}
+}
+Response samples
+200400401404409500501
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"results": [
+{}
 ]
-# --- ARCHIVO DE TEXTO LOCAL PARA LA API ---
-API_TEXT_FILE = "api_content.txt"
-# --- CORREO DE SOPORTE ACTUALIZADO ---
-SUPPORT_EMAIL = "dev-support@fiskaly.com"
+}
+Exports
+Create an export
+This endpoint creates an asynchronous export of invoices that match a given criteria.
 
-# --- HELPER FUNCTIONS ---
+Authorizations:
+JWT
+path Parameters
+export_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an export resource by using a randomized UUIDv4 format.
 
-@st.cache_resource(show_spinner="Loading and indexing documentation (this may take a moment)...")
-def load_and_index_docs(api_key):
-    """
-    Loads docs from BOTH web URLs and the local text file,
-    splits them, creates embeddings, and stores them in FAISS.
-    
-    Returns:
-        A LangChain retriever object.
-    """
-    try:
-        # 1. Load Documents from Web (las 22 guías)
-        web_loader = WebBaseLoader(DOCS_URLS)
-        docs_from_web = web_loader.load()
-        
-        # 2. Load Documents from Local Text File (el contenido de la API)
-        text_loader = TextLoader(API_TEXT_FILE, encoding="utf-8")
-        docs_from_text = text_loader.load()
-        
-        # 3. Combine all docs
-        all_docs = docs_from_web + docs_from_text
-        
-        # 4. Split Documents
-        # --- AJUSTE DE MÁXIMA PRECISIÓN ---
-        # Trozos más pequeños (300) con superposición (50)
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=300, 
-            chunk_overlap=50
-        )
-        split_docs = text_splitter.split_documents(all_docs)
-        
-        if not split_docs:
-            st.error("Failed to load any documents. Check URLs and network access.")
-            st.stop()
-            
-        # 5. Create Google Embeddings
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
-            google_api_key=api_key
-        )
-        
-        # 6. Create Vector Store (FAISS)
-        vector_store = FAISS.from_documents(split_docs, embeddings)
-        
-        # 7. Create Retriever
-        # Búsqueda estándar (precisa) con k=6
-        return vector_store.as_retriever(search_kwargs={"k": 6})
-    
-    except FileNotFoundError:
-        st.error(f"Error: El archivo '{API_TEXT_FILE}' no se encontró.")
-        st.write(f"Por favor, crea el archivo '{API_TEXT_FILE}' en tu repositorio de GitHub y pega el contenido de la documentación de la API de SIGN ES en él.")
-        st.stop()
-    except Exception as e:
-        st.error(f"Error loading or indexing documents: {e}")
-        st.stop()
+query Parameters
+series	
+string (TicketbaiInvoiceIdentifier) [ 1 .. 20 ] characters ^[0-9A-Z_/\-\.]{1,20}$
+Example: series=2022
+Uniquely identifies an invoice series in a given year.
 
-# --- SE RE-INTRODUCE ESTA FUNCIÓN ---
-def get_contextual_retriever_chain(retriever, llm):
-    """
-    Creates a chain that takes chat history and the latest user question,
-    rephrases the question to be standalone, and retrieves relevant documents.
-    """
-    retriever_prompt = ChatPromptTemplate.from_messages([
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-        ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
-    ])
-    # 
-    return create_history_aware_retriever(llm, retriever, retriever_prompt)
+issued_at_from	
+string (TimestampFormat19) = 19 characters ^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$
+Example: issued_at_from=24-12-1992 15:35:01
+Defines the earliest possible date of the invoice (inclusive).
+
+issued_at_to	
+string (TimestampFormat19) = 19 characters ^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$
+Example: issued_at_to=24-12-1992 15:35:01
+Defines the last possible date of the invoice (exclusive).
+
+client_id	
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: client_id=1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Defines the identifier of the client that issued the invoice.
+
+Request Body schema: application/json
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
+
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
+
+property name*
+additional property
+string <= 500 characters
+Responses
+200 Returns an export.
+400 Bad (invalid) request.
+401 Unauthorized access.
+409 Requested resource has a conflict.
+500 Internal server error occurred.
+
+put
+/exports/{export_id}
 
 
-def get_stuff_chain(llm):
-    """
-    Creates the main document stuffing chain that answers user questions 
-    based on retrieved context and chat history, following specific rules.
-    """
-    # --- PROMPT DEL SISTEMA ACTUALIZADO ---
-    system_prompt = f"""
-    Eres una máquina. Eres un bot de búsqueda y respuesta de documentación.
-    Tu *única* función es encontrar fragmentos relevantes del <context> y presentárselos al usuario.
-    Se te prohíbe usar cualquier conocimiento externo. No puedes responder ninguna pregunta usando información que no esté *explícitamente* escrita en el <context>.
-    El usuario puede preguntar en español o inglés; responde en el idioma de la pregunta del usuario.
+Request samples
+Payload
+Content type
+application/json
 
-    Sigue estas reglas con absoluta precisión:
-    1.  **Busca en el <context>:** Lee el <context> proporcionado.
-    2.  **Encuentra la Respuesta:** Encuentra los fragmentos exactos que responden a la pregunta del usuario.
-    3.  **Formula la Respuesta:** Formula una respuesta directa usando *solo* las palabras y hechos de esos fragmentos.
-    4.  **Maneja la Información Faltante:** Si la respuesta no está en el <context>, o si el contexto está vacío, DEBES responder con el siguiente texto:
-        "I'm sorry, I couldn't find an answer to your question in the documentation. For further assistance, please email our team at {SUPPORT_EMAIL} with as much detail as possible about your issue, and we'll get back to you as soon as possible."
-        (Si el usuario preguntó en español, responde con: "Lo siento, no pude encontrar una respuesta a tu pregunta en la documentación. Para más ayuda, por favor envía un correo a nuestro equipo a {SUPPORT_EMAIL} con todos los detalles posibles sobre tu problema, y te responderemos lo antes posible.")
-    5.  **NO ALUCINES:** No inventes hechos. Si el contexto menciona "JWT" y el usuario pregunta por "OAuth", DEBES decir que el contexto solo menciona "JWT" o que no puedes encontrar información sobre "OAuth". No inventes una respuesta bajo ninguna circunstancia.
+Copy
+{ }
+Response samples
+200400401409500
+Content type
+application/json
 
-    Aquí está el contexto:
-    <context>
-    {{context}}
-    </context>
-    """
-    qa_prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-    ])
-    return create_stuff_documents_chain(llm, qa_prompt)
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "REQUESTED",
+"requested_at": "24-12-1992 15:35:01",
+"started_at": "24-12-1992 15:35:01",
+"finished_at": "24-12-1992 15:35:01",
+"expires_at": "24-12-1992 15:35:01",
+"download": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Update an export
+This endpoint allows to update the metadata of an export.
 
-def get_escalation_summary(chat_history_messages, user_question, failed_solution, llm):
-    """
-    Generates a summary for the support team when a user indicates
-    a solution failed.
-    """
-    history_str = "\n".join(
-        [f"{'User' if isinstance(msg, HumanMessage) else 'Assistant'}: {msg.content}" 
-         for msg in chat_history_messages]
-    )
-    summary_prompt = f"""
-    A user is having trouble with a solution from our documentation.
-    Please generate a concise summary of the conversation for a support ticket.
-    Include the user's original question and the solution that failed.
-    
-    Conversation History:
-    {history_str}
-    
-    User's original question (approximate): {user_question}
-    Solution that failed (approximate): {failed_solution}
-    
-    Generate a summary for the support team:
-    """
-    try:
-        response = llm.invoke([HumanMessage(content=summary_prompt)])
-        return response.content
-    except Exception as e:
-        return f"Error generating summary: {e}"
+Authorizations:
+JWT
+path Parameters
+export_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an export resource by using a randomized UUIDv4 format.
 
-# --- STREAMLIT APP ---
+Request Body schema: application/json
+metadata	
+object (Metadata) <= 20 properties
+You can use this parameter to attach custom key-value data to an object.
+Metadata is useful for storing additional, structured information on an object.
+If MetaData is used in responses it returns the existing (request) metadata of the object. You can update metadata using the update endpoint of each resource. If a key is provided with an empty value string in an update request, that key-value pair is removed from the metadata.
 
-st.set_page_config(page_title="Doc Assistant", page_icon="🤖")
-st.title("🤖 AI Documentation Assistant")
-st.write("Ask questions about the Fiskaly developer documentation.")
+Note: You can specify up to 20 keys, with key names up to 40 characters long and values up to 500 characters long.
 
-# 1. Get API Key in Sidebar
-with st.sidebar:
-    st.header("Configuration")
-    if "GOOGLE_API_KEY" in st.secrets:
-        google_api_key = st.secrets["GOOGLE_API_KEY"]
-        st.success("API key loaded from secrets! 🤫")
-    else:
-        google_api_key = st.text_input(
-            "Enter your Google Gemini API Key", 
-            type="password"
-        )
-    if not google_api_key:
-        st.info("Please enter your API key to start (or add it to your Streamlit secrets as GOOGLE_API_KEY).")
-        st.stop()
+property name*
+additional property
+string <= 500 characters
+Responses
+200 Returns an export.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
 
-# 2. Configure Gemini (globally for the chat model)
-try:
-    genai.configure(api_key=google_api_key)
-except Exception as e:
-    st.error(f"Failed to configure Google AI: {e}")
-    st.stop()
+patch
+/exports/{export_id}
 
-# 3. Initialize LLM
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-preview-09-2025",
-    google_api_key=google_api_key,
-    temperature=0.0 # <-- PUESTO A 0.0 PARA CERO ALUCINACIONES
-)
 
-# 4. Load Retriever (cached)
-retriever = load_and_index_docs(google_api_key)
+Request samples
+Payload
+Content type
+application/json
 
-# 5. Initialize Chat History in Session State
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        AIMessage(content="Hello! How can I help you with the Fiskaly documentation? Are you running into a specific error or bug?")
-    ]
+Copy
+{ }
+Response samples
+200400401404500
+Content type
+application/json
 
-# 6. Display prior chat messages
-for msg in st.session_state.messages:
-    with st.chat_message(msg.type):
-        st.write(msg.content)
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "REQUESTED",
+"requested_at": "24-12-1992 15:35:01",
+"started_at": "24-12-1992 15:35:01",
+"finished_at": "24-12-1992 15:35:01",
+"expires_at": "24-12-1992 15:35:01",
+"download": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+Retrieve an export
+This endpoint retrieves an export resource which provides the status of the export request.
 
-# 7. Get user input
-user_prompt = st.chat_input("Ask your question here...")
+Authorizations:
+JWT
+path Parameters
+export_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an export resource by using a randomized UUIDv4 format.
 
-if user_prompt:
-    st.session_state.messages.append(HumanMessage(content=user_prompt))
-    with st.chat_message("user"):
-        st.write(user_prompt)
-        
-    # --- CORRECCIÓN DE ESCALADA ---
-    # Se eliminó "error" de la lista para evitar falsos positivos
-    failed_keywords = ["didn't work", "not working", "did not help", "failed", "no funcionó", "no me ayudó"]
-    is_failure_report = any(keyword in user_prompt.lower() for keyword in failed_keywords)
-    
-    if is_failure_report and len(st.session_state.messages) > 2:
-        last_bot_answer = st.session_state.messages[-2].content
-        last_user_question = st.session_state.messages[-3].content
-        
-        with st.chat_message("ai"):
-            with st.spinner("I'm sorry to hear that. Generating a summary for support..."):
-                summary = get_escalation_summary(
-                    st.session_state.messages[:-1], 
-                    last_user_question, # <-- Error de variable corregido
-                    last_bot_answer,  # <-- Error de variable corregido
-                    llm
-                )
-                escalation_response = f"""
-                I'm sorry the previous solution didn't work.
-                
-                I can help you create a support ticket. Here is a summary of our conversation:
-                
-                ---
-                **Support Ticket Summary:**
-                {summary}
-                ---
-                
-                You can forward this summary to **{SUPPORT_EMAIL}** to create a ticket.
-                """
-                st.write(escalation_response)
-                st.session_state.messages.append(AIMessage(content=escalation_response))
+Responses
+200 Returns an export.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
 
-    else:
-        # --- Normal RAG Chat Logic ---
-        with st.chat_message("ai"):
-            with st.spinner("Searching the documentation..."):
-                try:
-                    # --- LÓGICA COMPLETA RE-INTRODUCIDA ---
-                    
-                    # 1. Crear el 'stuff chain' (este sí usa el historial para el chat)
-                    stuff_chain = get_stuff_chain(llm)
-                    
-                    # 2. Crear el 'history aware retriever' (para entender el seguimiento)
-                    retriever_chain = get_contextual_retriever_chain(retriever, llm)
-                    
-                    # 3. Crear la cadena de recuperación final.
-                    conversational_rag_chain = create_retrieval_chain(
-                        retriever_chain,
-                        stuff_chain
-                    )
-                    
-                    # 4. Invocar la cadena final
-                    response = conversational_rag_chain.invoke({
-                        "chat_history": st.session_state.messages[:-1],
-                        "input": user_prompt
-                    })
-                    
-                    # 5. Mostrar y guardar la respuesta
-                    answer = response['answer']
-                    st.write(answer)
-                    st.session_state.messages.append(AIMessage(content=answer))
-                    
-                except Exception as e:
-                    error_msg = f"An error occurred: {e}"
-                    st.error(error_msg)
-                    st.session_state.messages.append(AIMessage(content=error_msg))
+get
+/exports/{export_id}
+
+
+Response samples
+200400401404500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"content": {
+"id": "1c81cb86-c2e8-4074-afc3-a0601b2bf063",
+"state": "REQUESTED",
+"requested_at": "24-12-1992 15:35:01",
+"started_at": "24-12-1992 15:35:01",
+"finished_at": "24-12-1992 15:35:01",
+"expires_at": "24-12-1992 15:35:01",
+"download": {}
+},
+"metadata": {
+"my_property_1": "1234",
+"my_property_2": "https://my-internal-system/path/to/resource/1234"
+}
+}
+List exports
+This endpoint retrieves a list of requested exports of the taxpayer.
+
+Authorizations:
+JWT
+query Parameters
+limit	
+integer (PaginationLimit) [ 1 .. 100 ]
+Default: 10
+Represents the pagination limit of the results set of a listing endpoint.
+
+token	
+string (PaginationToken) <= 1024 characters ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{4}|[A-...Show pattern
+Represents the pagination token, which is used as an index pointer to the next page relative to the current page in Base64 encoding.
+
+Responses
+200 Returns a list of exports.
+400 Bad (invalid) request.
+401 Unauthorized access.
+500 Internal server error occurred.
+
+get
+/exports
+
+
+Response samples
+200400401500
+Content type
+application/json
+
+Copy
+Expand allCollapse all
+{
+"results": [
+{}
+],
+"pagination": {
+"next": "string",
+"token": "string",
+"limit": 10
+}
+}
+Download an export
+This endpoint retrieves the zip archive of an export.
+
+Authorizations:
+JWT
+path Parameters
+export_id
+required
+string <uuid> (UniversallyUniqueIdentifierV4) [a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab...Show pattern
+Example: 1c81cb86-c2e8-4074-afc3-a0601b2bf063
+Uniquely identifies an export resource by using a randomized UUIDv4 format.
+
+Responses
+200 Returns an export zip archive.
+400 Bad (invalid) request.
+401 Unauthorized access.
+404 Requested resource does not exist.
+500 Internal server error occurred.
