@@ -190,7 +190,7 @@ except Exception as e:
 # Ajustamos la temperatura a 0.1 para permitir un mínimo de creatividad en la 
 # redacción (razonamiento) pero manteniéndonos pegados a los hechos.
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.0-flash", 
+    model="gemini-3-pro-preview", 
     google_api_key=google_api_key,
     temperature=0.1
 )
