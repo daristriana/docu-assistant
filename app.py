@@ -13,8 +13,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # --- CONFIGURATION ---
 
-# --- LISTA DE URLS ACTUALIZADA ---
-DOCS_URLS = [
+# 1. URLs DEL PORTAL DE DESARROLLADOR (Técnico / API)
+DEV_URLS = [
     "https://developer.fiskaly.com/",
     "https://developer.fiskaly.com/api/",
     "https://developer.fiskaly.com/products/kassensichv-de",
@@ -37,14 +37,67 @@ DOCS_URLS = [
     "https://developer.fiskaly.com/sign-es/invoicecompliance",
     "https://developer.fiskaly.com/sign-es/storage",
     "https://developer.fiskaly.com/sign-es/connectionloss",
-    "https://developer.fiskaly.com/sign-es/digital_receipt",
-    # URL NUEVA AGREGADA (Nota: El loader estándar leerá el texto visible de esta página, 
-    # pero no hará clic automáticamente en los artículos dentro de ella)
-    "https://support.fiskaly.com/hc/es/categories/7263083281692-SIGN-ES"
+    "https://developer.fiskaly.com/sign-es/digital_receipt"
 ]
 
+# 2. URLs DEL PORTAL DE SOPORTE (Casos de uso / Preguntas Frecuentes)
+SUPPORT_URLS = [
+    "https://support.fiskaly.com/hc/es/articles/21996443146780-SIGN-ES-Verifactu-vs-TicketBAI-diferencias-clave-en-la-implementaci%C3%B3n",
+    "https://support.fiskaly.com/hc/es/articles/21887220371228-SIGN-ES-C%C3%B3mo-funciona-el-endpoint-de-Validar-el-NIF",
+    "https://support.fiskaly.com/hc/es/articles/19902480554268-SIGN-ES-Qu%C3%A9-reg%C3%ADmenes-fiscales-est%C3%A1n-contemplados",
+    "https://support.fiskaly.com/hc/es/articles/15380474436124-SIGN-ES-Cu%C3%A1les-son-los-tiempos-de-respuesta-t%C3%ADpicos-al-crear-una-factura",
+    "https://support.fiskaly.com/hc/es/articles/12429833140380-SIGN-ES-C%C3%B3mo-registrar-el-certificado-de-dispositivo-en-el-Pa%C3%ADs-Vasco",
+    "https://support.fiskaly.com/hc/es/articles/12344881113372-SIGN-ES-C%C3%B3mo-es-el-flujo-general-de-trabajo",
+    "https://support.fiskaly.com/hc/es/articles/9444470399260-SIGN-ES-Tenemos-que-certificar-nuestro-software-o-hacer-alg%C3%BAn-otro-tr%C3%A1mite-en-los-territorios-vascos",
+    "https://support.fiskaly.com/hc/es/articles/9444088795548-SIGN-ES-Cumple-SIGN-ES-con-TicketBAI-y-Verifactu",
+    "https://support.fiskaly.com/hc/es/articles/7263276131996-SIGN-ES-D%C3%B3nde-puedo-encontrar-la-documentaci%C3%B3n-de-la-API-SIGN-ES",
+    "https://support.fiskaly.com/hc/es/articles/9577560675868-SIGN-ES-C%C3%B3mo-es-el-proceso-de-autenticaci%C3%B3n",
+    "https://support.fiskaly.com/hc/es/articles/20583709689244-SIGN-ES-C%C3%B3mo-utilizar-los-endpoints-para-el-acuerdo-de-colaboraci%C3%B3n-social",
+    "https://support.fiskaly.com/hc/es/articles/19478969060380-SIGN-ES-Cu%C3%A1ndo-y-c%C3%B3mo-debo-deshabilitar-a-un-contribuyente",
+    "https://support.fiskaly.com/hc/es/articles/9573755431964-SIGN-ES-Qu%C3%A9-ocurre-si-hay-que-modificar-los-datos-del-contribuyente",
+    "https://support.fiskaly.com/hc/es/articles/18977957493660-SIGN-ES-Cu%C3%A1ntos-Firmantes-necesito-crear",
+    "https://support.fiskaly.com/hc/es/articles/15380717503004-SIGN-ES-D%C3%B3nde-puedo-encontrar-el-n%C3%BAmero-de-serie-del-certificado-del-dispositivo-TicketBAI",
+    "https://support.fiskaly.com/hc/es/articles/9549111252892-SIGN-ES-Puedo-crear-firmantes-en-el-dashboard-de-fiskaly",
+    "https://support.fiskaly.com/hc/es/articles/9549184165916-SIGN-ES-Puedo-crear-clientes-en-el-dashboard-de-fiskaly-y-vincularlos-a-los-firmantes",
+    "https://support.fiskaly.com/hc/es/articles/23594753407388-SIGN-ES-Puedo-emitir-facturas-como-tercero",
+    "https://support.fiskaly.com/hc/es/articles/23506060983452-SIGN-ES-Puedo-emitir-una-factura-sin-identificar-al-destinatario",
+    "https://support.fiskaly.com/hc/es/articles/23505223455388-SIGN-ES-C%C3%B3mo-puedo-generar-una-factura-proforma",
+    "https://support.fiskaly.com/hc/es/articles/22422899151516-SIGN-ES-TicketBAI-c%C3%B3mo-declarar-suplidos",
+    "https://support.fiskaly.com/hc/es/articles/21996527651868-SIGN-ES-Diferencias-en-el-esquema-de-destinatarios-nacionales-vs-internacionales",
+    "https://support.fiskaly.com/hc/es/articles/21972024582172-SIGN-ES-Flujos-permitidos-para-cada-tipo-de-factura",
+    "https://support.fiskaly.com/hc/es/articles/21958330022940-SIGN-ES-Cu%C3%A1ndo-debe-usarse-el-campo-annotations",
+    "https://support.fiskaly.com/hc/es/articles/21957849266588-SIGN-ES-C%C3%B3mo-calcular-el-full-amount-de-un-%C3%ADtem",
+    "https://support.fiskaly.com/hc/es/articles/21957022142364-SIGN-ES-C%C3%B3mo-aplicar-un-descuento-a-nivel-de-%C3%ADtem-y-de-forma-global",
+    "https://support.fiskaly.com/hc/es/articles/21954870093980-SIGN-ES-C%C3%B3mo-emitir-una-factura-rappel",
+    "https://support.fiskaly.com/hc/es/articles/21954000270108-SIGN-ES-C%C3%B3mo-emitir-una-factura-recapitulativa",
+    "https://support.fiskaly.com/hc/es/articles/21952002823708-SIGN-ES-Verifactu-Se-incluyen-los-suplidos-y-las-retenciones-en-el-total-de-la-factura",
+    "https://support.fiskaly.com/hc/es/articles/21798232940828-SIGN-ES-Qu%C3%A9-hacer-si-el-n%C3%BAmero-de-identificaci%C3%B3n-fiscal-NIF-del-destinatario-no-est%C3%A1-registrado",
+    "https://support.fiskaly.com/hc/es/articles/21271659624860-SIGN-ES-C%C3%B3mo-funciona-la-facturaci%C3%B3n-por-el-destinatario",
+    "https://support.fiskaly.com/hc/es/articles/21159413340060-SIGN-ES-C%C3%B3mo-usar-el-campo-tax-base-para-reg%C3%ADmenes-especiales-de-IVA",
+    "https://support.fiskaly.com/hc/es/articles/20547255691676-SIGN-ES-En-qu%C3%A9-casos-debe-usarse-el-campo-coupon",
+    "https://support.fiskaly.com/hc/es/articles/20463342249756-SIGN-ES-C%C3%B3mo-generar-el-c%C3%B3digo-QR-offline-para-Verifactu",
+    "https://support.fiskaly.com/hc/es/articles/20015388553372-SIGN-ES-Cu%C3%A1ndo-usar-una-factura-de-tipo-REMEDY-o-una-factura-rectificativa-CORRECTING",
+    "https://support.fiskaly.com/hc/es/articles/19049921631260-SIGN-ES-Qu%C3%A9-informaci%C3%B3n-de-la-respuesta-de-la-API-debe-imprimirse-en-la-factura",
+    "https://support.fiskaly.com/hc/es/articles/15398500695324-SIGN-ES-C%C3%B3mo-identificar-problemas-en-facturas-con-estado-REQUIRES-INSPECTION-o-REQUIRES-CORRECTION",
+    "https://support.fiskaly.com/hc/es/articles/15388437654556-SIGN-ES-Qu%C3%A9-debo-hacer-si-el-estado-final-de-registro-de-la-factura-sigue-en-PENDING",
+    "https://support.fiskaly.com/hc/es/articles/15388086063644-SIGN-ES-C%C3%B3mo-puedo-verificar-el-estado-final-de-registro-de-la-factura",
+    "https://support.fiskaly.com/hc/es/articles/15384213305500-SIGN-ES-Factura-rectificativa-Cu%C3%A1l-es-la-diferencia-entre-los-m%C3%A9todos-por-SUSTITUCI%C3%93N-y-por-DIFERENCIAS",
+    "https://support.fiskaly.com/hc/es/articles/15383862735388-SIGN-ES-C%C3%B3mo-corregir-una-factura-que-ya-ha-sido-corregida",
+    "https://support.fiskaly.com/hc/es/articles/13181138647836-SIGN-ES-C%C3%B3mo-calcular-el-Importe-Ingreso-IRPF-de-una-factura-Bizkaia-Personas-f%C3%ADsicas",
+    "https://support.fiskaly.com/hc/es/articles/13014411272732-SIGN-ES-C%C3%B3mo-proceder-con-las-facturas-con-estado-REQUIRES-INSPECTION-en-Vizcaya",
+    "https://support.fiskaly.com/hc/es/articles/12310286023580-SIGN-ES-Los-albaranes-deben-expedirse-a-trav%C3%A9s-del-sistema-TicketBAI-Verifactu",
+    "https://support.fiskaly.com/hc/es/articles/12299877985820-SIGN-ES-C%C3%B3mo-gestionar-las-notas-de-cr%C3%A9dito",
+    "https://support.fiskaly.com/hc/es/articles/12298343962140-SIGN-ES-Cu%C3%A1l-es-el-proceso-de-reembolso",
+    "https://support.fiskaly.com/hc/es/articles/9577692134172-SIGN-ES-Qu%C3%A9-debo-hacer-si-la-transacci%C3%B3n-no-se-ha-llevado-a-cabo",
+    "https://support.fiskaly.com/hc/es/articles/9576715353244-SIGN-ES-C%C3%B3mo-corregir-una-factura-simplificada-con-una-factura-completa",
+    "https://support.fiskaly.com/hc/es/articles/9462601952156-SIGN-ES-Qu%C3%A9-debo-hacer-si-pierdo-conexi%C3%B3n-a-internet"
+]
+
+# COMBINAR AMBAS LISTAS
+DOCS_URLS = DEV_URLS + SUPPORT_URLS
+
+
 # --- ARCHIVO YAML LOCAL ---
-# Asegúrate de que este archivo exista en la misma carpeta o repo
 API_YAML_FILE = "oas.yaml"
 
 # --- CORREO DE SOPORTE ---
@@ -59,12 +112,11 @@ def load_and_index_docs(api_key):
     """
     try:
         # 1. Load Documents from Web
+        # Nota: Al haber muchas URLs, esto puede tardar un poco la primera vez.
         web_loader = WebBaseLoader(DOCS_URLS)
         docs_from_web = web_loader.load()
         
         # 2. Load Documents from Local YAML File
-        # Usamos TextLoader porque para RAG el YAML es simplemente texto estructurado.
-        # Si el archivo es muy complejo, la IA igual entenderá la estructura de indentación.
         text_loader = TextLoader(API_YAML_FILE, encoding="utf-8")
         docs_from_yaml = text_loader.load()
         
@@ -72,7 +124,6 @@ def load_and_index_docs(api_key):
         all_docs = docs_from_web + docs_from_yaml
         
         # 4. Split Documents
-        # Mantenemos chunks de 300/50 para precisión granular
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=300, 
             chunk_overlap=50
@@ -186,9 +237,8 @@ except Exception as e:
     st.error(f"Failed to configure Google AI: {e}")
     st.stop()
 
-# 3. Initialize LLM - CAMBIO A GEMINI 3 FLASH
-# Ajustamos la temperatura a 0.1 para permitir un mínimo de creatividad en la 
-# redacción (razonamiento) pero manteniéndonos pegados a los hechos.
+# 3. Initialize LLM - CAMBIO A GEMINI 3 PRO
+# Corregido: Usamos el modelo Flash para máxima velocidad con grandes volúmenes de texto.
 llm = ChatGoogleGenerativeAI(
     model="gemini-3-pro-preview", 
     google_api_key=google_api_key,
