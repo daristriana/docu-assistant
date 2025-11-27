@@ -126,7 +126,7 @@ def load_and_index_docs(api_key):
         # 4. Split Documents
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=256, 
-            chunk_overlap=20
+            chunk_overlap=50
         )
         split_docs = text_splitter.split_documents(all_docs)
         
@@ -144,7 +144,7 @@ def load_and_index_docs(api_key):
         vector_store = FAISS.from_documents(split_docs, embeddings)
         
         # 7. Create Retriever
-        return vector_store.as_retriever(search_kwargs={"k": 5})
+        return vector_store.as_retriever(search_kwargs={"k": 10})
     
     except FileNotFoundError:
         st.error(f"Error: El archivo '{API_YAML_FILE}' no se encontró.")
