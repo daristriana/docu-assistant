@@ -125,8 +125,8 @@ def load_and_index_docs(api_key):
         
         # 4. Split Documents
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=300, 
-            chunk_overlap=50
+            chunk_size=256, 
+            chunk_overlap=20
         )
         split_docs = text_splitter.split_documents(all_docs)
         
